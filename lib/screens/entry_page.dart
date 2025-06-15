@@ -4,6 +4,7 @@ import 'package:noir_journal/models/diary_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/entry_description_field.dart';
 import '../constants/ui_constants.dart';
+import '../constants/diary_icons.dart';
 
 class EntryPage extends StatefulWidget {
   final DiaryEntry entry;
@@ -19,7 +20,7 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
   late TextEditingController _titleController;
   bool _editing = false;
   late String _currentDescription;
-  late IconData _currentIcon;
+  late int _currentIconIndex;
   late AnimationController _openCloseController;
   late Animation<double> _openCloseAnim;
   late AnimationController _editAnimController;
@@ -29,7 +30,7 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _currentDescription = widget.entry.description;
-    _currentIcon = widget.entry.icon;
+    _currentIconIndex = widget.entry.iconIndex;
     _descController = TextEditingController(text: widget.entry.description);
     _titleController = TextEditingController(text: widget.entry.title);
     _openCloseController = AnimationController(
@@ -75,7 +76,7 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
         setState(() {
           _editing = false;
           _descController.text = _currentDescription;
-          _currentIcon = widget.entry.icon;
+          _currentIconIndex = widget.entry.iconIndex;
           _titleController.text = widget.entry.title;
         });
       }
@@ -87,14 +88,13 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
       title: _titleController.text.trim(),
       createdAt: widget.entry.createdAt,
       description: _descController.text.trim(),
-      icon: _currentIcon,
+      iconIndex: _currentIconIndex,
     );
     widget.onUpdate?.call(updated);
     setState(() {
       _editing = false;
       _currentDescription = updated.description;
-      _currentIcon = updated.icon;
-      // Also update the title in the UI
+      _currentIconIndex = updated.iconIndex;
       _titleController.text = updated.title;
     });
     final prefs = await SharedPreferences.getInstance();
@@ -181,7 +181,7 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Icon(
-                      _currentIcon,
+                      DiaryIcons.all[_currentIconIndex],
                       size: 40,
                       color: Theme.of(context).colorScheme.primary,
                     ),
@@ -228,10 +228,16 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
                     currentDescription: _currentDescription,
                     editAnim: _editAnim,
                     isDark: isDark,
-                    selectedIcon: _currentIcon,
+                    selectedIcon: DiaryIcons.all[_currentIconIndex],
                     onIconChanged:
                         _editing
-                            ? (icon) => setState(() => _currentIcon = icon)
+                            ? (icon) {
+                              setState(() {
+                                _currentIconIndex = DiaryIcons.all.indexOf(
+                                  icon,
+                                );
+                              });
+                            }
                             : null,
                   ),
                 ),

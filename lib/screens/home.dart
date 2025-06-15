@@ -39,7 +39,11 @@ class _HomePageState extends State<HomePage> {
               }
             } catch (_) {}
             // Legacy string entry
-            return DiaryEntry(title: e, createdAt: DateTime.now());
+            return DiaryEntry(
+              title: e,
+              createdAt: DateTime.now(),
+              iconIndex: 0,
+            );
           }).toList();
     });
   }
@@ -128,6 +132,7 @@ class _HomePageState extends State<HomePage> {
             title: result,
             createdAt: DateTime.now(),
             description: desc ?? '',
+            iconIndex: 0,
           ),
         );
       });
