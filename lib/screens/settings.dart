@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/ui_constants.dart';
 
 class SettingsPage extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeModeNotifier;
@@ -85,7 +86,11 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(
+        title: const Text('Settings'),
+        titleSpacing: DiaryPaddings.horizontal,
+        actions: const [SizedBox(width: DiaryPaddings.horizontal)],
+      ),
       body: ListView(
         children: [
           SwitchListTile(

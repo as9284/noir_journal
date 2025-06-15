@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/entry_description_field.dart';
+import '../constants/ui_constants.dart';
 
 class EntryPage extends StatefulWidget {
   final DiaryEntry entry;
@@ -141,6 +142,7 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
         ),
         title: Text(widget.entry.title),
         centerTitle: true,
+        titleSpacing: DiaryPaddings.horizontal,
         actions: [
           if (!_editing)
             IconButton(
@@ -160,6 +162,7 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
               onPressed: _saveDescription,
             ),
           ],
+          const SizedBox(width: DiaryPaddings.horizontal),
         ],
       ),
       backgroundColor: backgroundColor,

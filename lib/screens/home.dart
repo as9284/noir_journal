@@ -6,6 +6,7 @@ import 'package:noir_journal/screens/entry_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:noir_journal/models/diary_entry.dart';
 import 'package:noir_journal/widgets/diary_entry_grouped_list.dart';
+import '../constants/ui_constants.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -180,6 +181,7 @@ class _HomePageState extends State<HomePage> {
         title: Text(
           _isSelecting ? '${_selectedEntries.length} selected' : 'Noir Journal',
         ),
+        titleSpacing: DiaryPaddings.horizontal,
         actions: [
           if (_isSelecting)
             IconButton(
@@ -197,6 +199,7 @@ class _HomePageState extends State<HomePage> {
               onPressed: () => _onSettingsPressed(context),
               tooltip: 'Settings',
             ),
+          const SizedBox(width: DiaryPaddings.horizontal),
         ],
       ),
       body: Padding(
