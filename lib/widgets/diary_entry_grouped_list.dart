@@ -5,15 +5,15 @@ import 'package:noir_journal/widgets/diary_entry_card.dart';
 class DiaryEntryGroupedList extends StatelessWidget {
   final List<DiaryEntry> entries;
   final void Function(DiaryEntry) onTap;
-  final Future<bool?> Function(DiaryEntry)? onDeleteConfirm;
-  final void Function(DiaryEntry)? onDelete;
+  final void Function(DiaryEntry)? onLongPress;
+  final Set<DiaryEntry>? selectedEntries;
 
   const DiaryEntryGroupedList({
     super.key,
     required this.entries,
     required this.onTap,
-    this.onDeleteConfirm,
-    this.onDelete,
+    this.onLongPress,
+    this.selectedEntries,
   });
 
   @override
@@ -48,11 +48,8 @@ class DiaryEntryGroupedList extends StatelessWidget {
               return DiaryEntryCard(
                 entry: entry,
                 onTap: () => onTap(entry),
-                confirmDismiss:
-                    (direction) async =>
-                        await (onDeleteConfirm?.call(entry) ??
-                            Future.value(false)),
-                onDismissed: (direction) => onDelete?.call(entry),
+                onLongPress: () => onLongPress?.call(entry),
+                selected: selectedEntries?.contains(entry) ?? false,
                 padding: const EdgeInsets.symmetric(vertical: 6.0),
               );
             }

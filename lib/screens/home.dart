@@ -16,6 +16,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<DiaryEntry> _entries = [];
+  Set<DiaryEntry> _selectedEntries = {};
+  bool get _isSelecting => _selectedEntries.isNotEmpty;
 
   @override
   void initState() {
@@ -101,23 +103,52 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onEntryTap(DiaryEntry entry) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => EntryPage(title: entry.title)),
-    );
+    if (_isSelecting) {
+      setState(() {
+        if (_selectedEntries.contains(entry)) {
+          _selectedEntries.remove(entry);
+        } else {
+          _selectedEntries.add(entry);
+        }
+      });
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => EntryPage(title: entry.title)),
+      );
+    }
+  }
+
+  void _onEntryLongPress(DiaryEntry entry) {
+    setState(() {
+      _selectedEntries.add(entry);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Noir Journal'),
+        title: Text(
+          _isSelecting ? '${_selectedEntries.length} selected' : 'Noir Journal',
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => _onSettingsPressed(context),
-            tooltip: 'Settings',
-          ),
+          if (_isSelecting)
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: 'Cancel',
+              onPressed: () {
+                setState(() {
+                  _selectedEntries.clear();
+                });
+              },
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () => _onSettingsPressed(context),
+              tooltip: 'Settings',
+            ),
         ],
       ),
       body: Padding(
@@ -133,15 +164,55 @@ class _HomePageState extends State<HomePage> {
                 : DiaryEntryGroupedList(
                   entries: _entries,
                   onTap: _onEntryTap,
-                  onDeleteConfirm: _showDeleteConfirm,
-                  onDelete: _deleteEntry,
+                  onLongPress: _onEntryLongPress,
+                  selectedEntries: _selectedEntries,
                 ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _onAddEntryPressed(context),
-        tooltip: 'Add Entry',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton:
+          _isSelecting
+              ? FloatingActionButton(
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder:
+                        (context) => AlertDialog(
+                          title: const Text('Delete Entries?'),
+                          content: Text(
+                            'Are you sure you want to delete ${_selectedEntries.length} selected entries?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                  );
+                  if (confirmed == true) {
+                    setState(() {
+                      _entries.removeWhere((e) => _selectedEntries.contains(e));
+                      _selectedEntries.clear();
+                    });
+                    await _saveEntries();
+                  }
+                },
+                tooltip: 'Delete',
+                backgroundColor: Colors.red,
+                child: const Icon(Icons.delete),
+              )
+              : FloatingActionButton(
+                onPressed: () => _onAddEntryPressed(context),
+                tooltip: 'Add Entry',
+                child: const Icon(Icons.add),
+              ),
     );
   }
 
