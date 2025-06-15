@@ -61,6 +61,7 @@ class _EntryDescriptionFieldState extends State<EntryDescriptionField> {
     final isDark = widget.isDark;
     final selectedIcon = widget.selectedIcon;
     final onIconChanged = widget.onIconChanged;
+
     if (editing) {
       return Opacity(
         opacity: editAnim.value,

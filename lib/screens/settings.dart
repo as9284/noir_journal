@@ -75,7 +75,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
     );
     if (confirmed == true) {
-      // Perform data deletion here
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
