@@ -15,8 +15,10 @@ class EntryPage extends StatefulWidget {
 
 class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
   late TextEditingController _descController;
+  late TextEditingController _titleController;
   bool _editing = false;
   late String _currentDescription;
+  late IconData _currentIcon;
   late AnimationController _openCloseController;
   late Animation<double> _openCloseAnim;
   late AnimationController _editAnimController;
@@ -26,7 +28,9 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _currentDescription = widget.entry.description;
+    _currentIcon = widget.entry.icon;
     _descController = TextEditingController(text: widget.entry.description);
+    _titleController = TextEditingController(text: widget.entry.title);
     _openCloseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -70,6 +74,8 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
         setState(() {
           _editing = false;
           _descController.text = _currentDescription;
+          _currentIcon = widget.entry.icon;
+          _titleController.text = widget.entry.title;
         });
       }
     });
@@ -77,14 +83,18 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
 
   Future<void> _saveDescription() async {
     final updated = DiaryEntry(
-      title: widget.entry.title,
+      title: _titleController.text.trim(),
       createdAt: widget.entry.createdAt,
       description: _descController.text.trim(),
+      icon: _currentIcon,
     );
     widget.onUpdate?.call(updated);
     setState(() {
       _editing = false;
       _currentDescription = updated.description;
+      _currentIcon = updated.icon;
+      // Also update the title in the UI
+      _titleController.text = updated.title;
     });
     final prefs = await SharedPreferences.getInstance();
     final entriesJson = prefs.getStringList('diary_entries') ?? [];
@@ -168,23 +178,42 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Icon(
-                      Icons.book_rounded,
+                      _currentIcon,
                       size: 40,
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        widget.entry.title,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.1,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      child:
+                          _editing
+                              ? TextField(
+                                controller: _titleController,
+                                maxLines: 2,
+                                minLines: 1,
+                                autofocus: true,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.1,
+                                ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: 'Title',
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              )
+                              : Text(
+                                _titleController.text,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.1,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                     ),
                   ],
                 ),
@@ -196,6 +225,11 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
                     currentDescription: _currentDescription,
                     editAnim: _editAnim,
                     isDark: isDark,
+                    selectedIcon: _currentIcon,
+                    onIconChanged:
+                        _editing
+                            ? (icon) => setState(() => _currentIcon = icon)
+                            : null,
                   ),
                 ),
                 const SizedBox(height: 16),

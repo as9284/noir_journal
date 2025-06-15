@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../constants/diary_icons.dart';
+import '../constants/ui_constants.dart';
 
 class EntryDescriptionField extends StatefulWidget {
   final bool editing;
@@ -6,6 +8,8 @@ class EntryDescriptionField extends StatefulWidget {
   final String currentDescription;
   final Animation<double> editAnim;
   final bool isDark;
+  final IconData selectedIcon;
+  final ValueChanged<IconData>? onIconChanged;
 
   const EntryDescriptionField({
     super.key,
@@ -14,6 +18,8 @@ class EntryDescriptionField extends StatefulWidget {
     required this.currentDescription,
     required this.editAnim,
     required this.isDark,
+    required this.selectedIcon,
+    this.onIconChanged,
   });
 
   @override
@@ -53,6 +59,8 @@ class _EntryDescriptionFieldState extends State<EntryDescriptionField> {
     final currentDescription = widget.currentDescription;
     final editAnim = widget.editAnim;
     final isDark = widget.isDark;
+    final selectedIcon = widget.selectedIcon;
+    final onIconChanged = widget.onIconChanged;
     if (editing) {
       return Opacity(
         opacity: editAnim.value,
@@ -68,62 +76,166 @@ class _EntryDescriptionFieldState extends State<EntryDescriptionField> {
               borderRadius: BorderRadius.circular(12),
             ),
             margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AnimatedOpacity(
-                  opacity: editAnim.value,
-                  duration: const Duration(milliseconds: 200),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.edit,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Editing',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelMedium?.copyWith(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DiaryPaddings.horizontal,
+              vertical: DiaryPaddings.vertical,
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedOpacity(
+                    opacity: editAnim.value,
+                    duration: const Duration(milliseconds: 200),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.edit,
                           color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
+                          size: 20,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                AnimatedOpacity(
-                  opacity: editAnim.value,
-                  duration: const Duration(milliseconds: 200),
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: TextField(
-                      key: const ValueKey('edit'),
-                      controller: controller,
-                      maxLines: null,
-                      minLines: 12,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Write your thoughts...',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.only(right: 4, top: 2),
-                      ),
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.15,
-                        height: 1.5,
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
-                      textAlign: TextAlign.left,
+                        const SizedBox(width: 6),
+                        Text(
+                          'Editing',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  if (onIconChanged != null) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Choose an icon:',
+                          style: Theme.of(context).textTheme.labelMedium,
+                        ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.swipe,
+                              size: 18,
+                              color: Theme.of(context).hintColor,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Scroll',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context).hintColor,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 56,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DiaryPaddings.horizontal,
+                        ),
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children:
+                              DiaryIcons.all.map((icon) {
+                                final isSelected = icon == selectedIcon;
+                                return GestureDetector(
+                                  onTap: () => onIconChanged(icon),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 150),
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          isSelected
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withAlpha(30)
+                                              : Colors.transparent,
+                                      border: Border.all(
+                                        color:
+                                            isSelected
+                                                ? Theme.of(
+                                                  context,
+                                                ).colorScheme.primary
+                                                : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      icon,
+                                      size: 32,
+                                      color:
+                                          isSelected
+                                              ? Theme.of(
+                                                context,
+                                              ).colorScheme.primary
+                                              : Theme.of(
+                                                context,
+                                              ).iconTheme.color,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  AnimatedOpacity(
+                    opacity: editAnim.value,
+                    duration: const Duration(milliseconds: 200),
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: Scrollbar(
+                        child: TextField(
+                          key: const ValueKey('edit'),
+                          controller: controller,
+                          maxLines: null,
+                          minLines: 3,
+                          autofocus: true,
+                          decoration: const InputDecoration(
+                            hintText: 'Write your thoughts...',
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 0,
+                              vertical: 2,
+                            ),
+                          ),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyLarge?.copyWith(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.15,
+                            height: 1.5,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          textAlign: TextAlign.left,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -134,7 +246,10 @@ class _EntryDescriptionFieldState extends State<EntryDescriptionField> {
         child: SingleChildScrollView(
           key: const ValueKey('view'),
           child: Padding(
-            padding: const EdgeInsets.only(right: 4, top: 2),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DiaryPaddings.horizontal,
+              vertical: 2,
+            ),
             child:
                 currentDescription.isEmpty
                     ? Text(

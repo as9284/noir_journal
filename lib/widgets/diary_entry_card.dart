@@ -55,6 +55,11 @@ class DiaryEntryCard extends StatelessWidget {
                 horizontal: 20,
                 vertical: 12,
               ),
+              leading: Icon(
+                entry.icon,
+                size: 36,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: Text(
                 entry.title,
                 style: Theme.of(context).textTheme.titleLarge,
