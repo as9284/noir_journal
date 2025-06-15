@@ -92,10 +92,42 @@ class _HomePageState extends State<HomePage> {
           ),
     );
     if (result != null && result.isNotEmpty) {
+      final descController = TextEditingController();
+      final desc = await showDialog<String>(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Describe your day'),
+              content: TextField(
+                controller: descController,
+                autofocus: true,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Skip'),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      () => Navigator.pop(context, descController.text.trim()),
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
+      );
       setState(() {
         _entries.insert(
           0,
-          DiaryEntry(title: result, createdAt: DateTime.now()),
+          DiaryEntry(
+            title: result,
+            createdAt: DateTime.now(),
+            description: desc ?? '',
+          ),
         );
       });
       await _saveEntries();
@@ -114,7 +146,23 @@ class _HomePageState extends State<HomePage> {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => EntryPage(title: entry.title)),
+        MaterialPageRoute(
+          builder:
+              (context) => EntryPage(
+                entry: entry,
+                onUpdate: (updated) async {
+                  setState(() {
+                    final idx = _entries.indexWhere(
+                      (e) =>
+                          e.title == entry.title &&
+                          e.createdAt == entry.createdAt,
+                    );
+                    if (idx != -1) _entries[idx] = updated;
+                  });
+                  await _saveEntries();
+                },
+              ),
+        ),
       );
     }
   }
