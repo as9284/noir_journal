@@ -266,39 +266,4 @@ class _HomePageState extends State<HomePage> {
               ),
     );
   }
-
-  Future<bool?> _showDeleteConfirm(DiaryEntry entry) async {
-    return await showDialog<bool>(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('Delete Entry?'),
-                content: Text(
-                  'Are you sure you want to delete "${entry.title}"?',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Delete'),
-                  ),
-                ],
-              ),
-        ) ??
-        false;
-  }
-
-  void _deleteEntry(DiaryEntry entry) async {
-    setState(() {
-      _entries.remove(entry);
-    });
-    await _saveEntries();
-  }
 }
