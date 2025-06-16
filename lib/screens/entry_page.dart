@@ -119,6 +119,50 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
     await prefs.setStringList('diary_entries', updatedJson);
   }
 
+  Future<void> _deleteEntry() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Entry?'),
+            content: const Text('Are you sure you want to delete this entry?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+    );
+    if (confirmed == true) {
+      final prefs = await SharedPreferences.getInstance();
+      final entriesJson = prefs.getStringList('diary_entries') ?? [];
+      final updatedJson =
+          entriesJson.where((e) {
+            try {
+              final decoded = DiaryEntry.fromJson(
+                Map<String, dynamic>.from(jsonDecode(e)),
+              );
+              return !(decoded.title == widget.entry.title &&
+                  decoded.createdAt == widget.entry.createdAt);
+            } catch (_) {}
+            return true;
+          }).toList();
+      await prefs.setStringList('diary_entries', updatedJson);
+      if (mounted) {
+        Navigator.of(context).pop('deleted');
+      }
+    }
+  }
+
   void _closePage() async {
     await _openCloseController.reverse();
     if (mounted) {
@@ -144,16 +188,22 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
           icon: const Icon(Icons.arrow_back),
           onPressed: _closePage,
         ),
-        title: Text(widget.entry.title),
+        title: Text("Diary Entry"),
         centerTitle: true,
         titleSpacing: DiaryPaddings.horizontal,
         actions: [
-          if (!_editing)
+          if (!_editing) ...[
             IconButton(
               icon: const Icon(Icons.edit),
               tooltip: 'Edit Description',
               onPressed: _startEdit,
             ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete Entry',
+              onPressed: _deleteEntry,
+            ),
+          ],
           if (_editing) ...[
             IconButton(
               icon: const Icon(Icons.close),

@@ -176,7 +176,7 @@ class _HomePageState extends State<HomePage> {
       ),
       appBar: AppBar(
         title: Text(
-          _isSelecting ? '${_selectedEntries.length} selected' : 'Noir Journal',
+          _isSelecting ? '${_selectedEntries.length} selected' : 'Your Journal',
         ),
         titleSpacing: 0,
         centerTitle: !(_searchQuery.isNotEmpty || _searchDate != null),
@@ -232,7 +232,7 @@ class _HomePageState extends State<HomePage> {
                         (context) => AlertDialog(
                           title: const Text('Delete Entries?'),
                           content: Text(
-                            'Are you sure you want to delete \\${_selectedEntries.length} selected entries?',
+                            'Are you sure you want to delete ${_selectedEntries.length} selected entr${_selectedEntries.length == 1 ? 'y' : 'ies'}?',
                           ),
                           actions: [
                             TextButton(

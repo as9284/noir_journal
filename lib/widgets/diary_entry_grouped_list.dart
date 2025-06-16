@@ -24,7 +24,15 @@ class DiaryEntryGroupedList extends StatelessWidget {
       grouped.putIfAbsent(dateKey, () => []).add(entry);
     }
     final dateKeys = grouped.keys.toList();
-    dateKeys.sort((a, b) => b.compareTo(a)); // Newest date first
+    dateKeys.sort((a, b) {
+      // Custom order: Today > Yesterday > others (descending)
+      if (a == b) return 0;
+      if (a == 'Today') return -1;
+      if (b == 'Today') return 1;
+      if (a == 'Yesterday') return -1;
+      if (b == 'Yesterday') return 1;
+      return b.compareTo(a); // Descending for other dates
+    }); // Most recent group first
     for (final key in grouped.keys) {
       grouped[key]!.sort(
         (a, b) => b.createdAt.compareTo(a.createdAt),
@@ -69,15 +77,13 @@ class DiaryEntryGroupedList extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
-    if (date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day) {
+    final today = DateTime(now.year, now.month, now.day);
+    final entryDay = DateTime(date.year, date.month, date.day);
+    if (entryDay == today) {
       return 'Today';
     }
-    final yesterday = now.subtract(const Duration(days: 1));
-    if (date.year == yesterday.year &&
-        date.month == yesterday.month &&
-        date.day == yesterday.day) {
+    final yesterday = today.subtract(const Duration(days: 1));
+    if (entryDay == yesterday) {
       return 'Yesterday';
     }
     // Example: Monday, Jun 16, 2025
