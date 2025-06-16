@@ -9,7 +9,6 @@ import 'package:noir_journal/widgets/diary_entry_grouped_list.dart';
 import '../constants/ui_constants.dart';
 import '../widgets/icon_picker_dialog.dart';
 import 'package:noir_journal/widgets/app_drawer.dart';
-import 'package:noir_journal/widgets/diary_entry_search_delegate.dart';
 import 'package:noir_journal/utils/entry_dialogs.dart';
 
 class HomePage extends StatefulWidget {
