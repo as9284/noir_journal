@@ -8,6 +8,9 @@ import 'package:noir_journal/models/diary_entry.dart';
 import 'package:noir_journal/widgets/diary_entry_grouped_list.dart';
 import '../constants/ui_constants.dart';
 import '../widgets/icon_picker_dialog.dart';
+import 'package:noir_journal/widgets/app_drawer.dart';
+import 'package:noir_journal/widgets/diary_entry_search_delegate.dart';
+import 'package:noir_journal/utils/entry_dialogs.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,6 +23,33 @@ class _HomePageState extends State<HomePage> {
   List<DiaryEntry> _entries = [];
   Set<DiaryEntry> _selectedEntries = {};
   bool get _isSelecting => _selectedEntries.isNotEmpty;
+  String _searchQuery = '';
+  DateTime? _searchDate;
+
+  List<DiaryEntry> get _filteredEntries {
+    List<DiaryEntry> filtered = _entries;
+    if (_searchQuery.isNotEmpty) {
+      filtered =
+          filtered
+              .where(
+                (e) =>
+                    e.title.toLowerCase().contains(_searchQuery.toLowerCase()),
+              )
+              .toList();
+    }
+    if (_searchDate != null) {
+      filtered =
+          filtered
+              .where(
+                (e) =>
+                    e.createdAt.year == _searchDate!.year &&
+                    e.createdAt.month == _searchDate!.month &&
+                    e.createdAt.day == _searchDate!.day,
+              )
+              .toList();
+    }
+    return filtered;
+  }
 
   @override
   void initState() {
@@ -66,80 +96,17 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _onAddEntryPressed(BuildContext context) async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('New Diary Entry'),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (controller.text.trim().isNotEmpty) {
-                    Navigator.pop(context, controller.text.trim());
-                  }
-                },
-                child: const Text('Add'),
-              ),
-            ],
-          ),
-    );
+  Future<void> _onAddEntryPressed(BuildContext context) async {
+    final result = await showTitleDialog(context);
     if (result != null && result.isNotEmpty) {
-      final descController = TextEditingController();
-      final desc = await showDialog<String>(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Describe your day'),
-              content: TextField(
-                controller: descController,
-                autofocus: true,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Skip'),
-                ),
-                ElevatedButton(
-                  onPressed:
-                      () => Navigator.pop(context, descController.text.trim()),
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-      );
-      final pickedDate = await showDatePicker(
-        context: context,
-        initialDate: DateTime.now(),
-        firstDate: DateTime(2000),
-        lastDate: DateTime(2100),
-        helpText: 'Select entry date (for testing)',
-      );
+      final desc = await showDescriptionDialog(context);
       final iconIndex = await showIconPickerDialog(context);
       setState(() {
         _entries.insert(
           0,
           DiaryEntry(
             title: result,
-            createdAt: pickedDate ?? DateTime.now(),
+            createdAt: DateTime.now(),
             description: desc ?? '',
             iconIndex: iconIndex ?? 0,
           ),
@@ -191,12 +158,41 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: AppDrawer(
+        entries: _entries,
+        onSearchTitle: (query) {
+          setState(() {
+            _searchQuery = query;
+            _searchDate = null;
+          });
+        },
+        onSearchDate: (picked) {
+          setState(() {
+            _searchDate = picked;
+            _searchQuery = '';
+          });
+        },
+        onSettings: () => _onSettingsPressed(context),
+        version: 'v1.0.0',
+      ),
       appBar: AppBar(
         title: Text(
           _isSelecting ? '${_selectedEntries.length} selected' : 'Noir Journal',
         ),
-        titleSpacing: DiaryPaddings.horizontal,
+        titleSpacing: 0,
+        centerTitle: !(_searchQuery.isNotEmpty || _searchDate != null),
         actions: [
+          if (_searchQuery.isNotEmpty || _searchDate != null)
+            IconButton(
+              icon: const Icon(Icons.clear),
+              tooltip: 'Clear Search',
+              onPressed: () {
+                setState(() {
+                  _searchQuery = '';
+                  _searchDate = null;
+                });
+              },
+            ),
           if (_isSelecting)
             IconButton(
               icon: const Icon(Icons.close),
@@ -206,12 +202,6 @@ class _HomePageState extends State<HomePage> {
                   _selectedEntries.clear();
                 });
               },
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () => _onSettingsPressed(context),
-              tooltip: 'Settings',
             ),
           const SizedBox(width: DiaryPaddings.horizontal),
         ],
@@ -227,7 +217,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 )
                 : DiaryEntryGroupedList(
-                  entries: _entries,
+                  entries: _filteredEntries,
                   onTap: _onEntryTap,
                   onLongPress: _onEntryLongPress,
                   selectedEntries: _selectedEntries,
@@ -243,7 +233,7 @@ class _HomePageState extends State<HomePage> {
                         (context) => AlertDialog(
                           title: const Text('Delete Entries?'),
                           content: Text(
-                            'Are you sure you want to delete ${_selectedEntries.length} selected entries?',
+                            'Are you sure you want to delete \\${_selectedEntries.length} selected entries?',
                           ),
                           actions: [
                             TextButton(
