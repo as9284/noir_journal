@@ -52,7 +52,9 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
       curve: Curves.easeInOut,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _openCloseController.forward();
+      Future.delayed(const Duration(milliseconds: 120), () {
+        _openCloseController.forward();
+      });
     });
   }
 
