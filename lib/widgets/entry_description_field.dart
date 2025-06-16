@@ -63,10 +63,10 @@ class _EntryDescriptionFieldState extends State<EntryDescriptionField> {
     final onIconChanged = widget.onIconChanged;
 
     if (editing) {
-      return Opacity(
-        opacity: editAnim.value,
-        child: Transform.translate(
-          offset: Offset(0, 20 * (1 - editAnim.value)),
+      return Transform.translate(
+        offset: Offset(0, 20 * (1 - editAnim.value)),
+        child: Opacity(
+          opacity: editAnim.value,
           child: Container(
             decoration: BoxDecoration(
               color: (isDark ? Colors.white10 : Colors.black12).withAlpha(30),
@@ -81,162 +81,143 @@ class _EntryDescriptionFieldState extends State<EntryDescriptionField> {
               horizontal: DiaryPaddings.horizontal,
               vertical: DiaryPaddings.vertical,
             ),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AnimatedOpacity(
-                    opacity: editAnim.value,
-                    duration: const Duration(milliseconds: 200),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.edit,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Editing',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.edit,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
                     ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Editing',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (onIconChanged != null) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Choose an icon:',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.swipe,
+                            size: 18,
+                            color: Theme.of(context).hintColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Scroll',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).hintColor,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
-                  if (onIconChanged != null) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Choose an icon:',
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.swipe,
-                              size: 18,
-                              color: Theme.of(context).hintColor,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Scroll',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.labelSmall?.copyWith(
-                                color: Theme.of(context).hintColor,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 56,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: DiaryPaddings.horizontal,
-                        ),
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children:
-                              DiaryIcons.all.map((icon) {
-                                final isSelected = icon == selectedIcon;
-                                return GestureDetector(
-                                  onTap: () => onIconChanged(icon),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 150),
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          isSelected
-                                              ? Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .withAlpha(30)
-                                              : Colors.transparent,
-                                      border: Border.all(
-                                        color:
-                                            isSelected
-                                                ? Theme.of(
-                                                  context,
-                                                ).colorScheme.primary
-                                                : Colors.transparent,
-                                        width: 2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      icon,
-                                      size: 32,
+                  SizedBox(
+                    height: 56,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DiaryPaddings.horizontal,
+                      ),
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children:
+                            DiaryIcons.all.map((icon) {
+                              final isSelected = icon == selectedIcon;
+                              return GestureDetector(
+                                onTap: () => onIconChanged(icon),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        isSelected
+                                            ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary.withAlpha(30)
+                                            : Colors.transparent,
+                                    border: Border.all(
                                       color:
                                           isSelected
                                               ? Theme.of(
                                                 context,
                                               ).colorScheme.primary
-                                              : Theme.of(
-                                                context,
-                                              ).iconTheme.color,
+                                              : Colors.transparent,
+                                      width: 2,
                                     ),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                );
-                              }).toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  AnimatedOpacity(
-                    opacity: editAnim.value,
-                    duration: const Duration(milliseconds: 200),
-                    child: Align(
-                      alignment: Alignment.topLeft,
-                      child: Scrollbar(
-                        child: TextField(
-                          key: const ValueKey('edit'),
-                          controller: controller,
-                          maxLines: null,
-                          minLines: 3,
-                          autofocus: true,
-                          decoration: const InputDecoration(
-                            hintText: 'Write your thoughts...',
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 0,
-                              vertical: 2,
-                            ),
-                          ),
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyLarge?.copyWith(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.15,
-                            height: 1.5,
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
+                                  child: Icon(
+                                    icon,
+                                    size: 32,
+                                    color:
+                                        isSelected
+                                            ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                            : Theme.of(context).iconTheme.color,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
                 ],
-              ),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Scrollbar(
+                      child: TextField(
+                        key: const ValueKey('edit'),
+                        controller: controller,
+                        maxLines: null,
+                        minLines: 3,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Write your thoughts...',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 0,
+                            vertical: 2,
+                          ),
+                        ),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.15,
+                          height: 1.5,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -254,7 +235,7 @@ class _EntryDescriptionFieldState extends State<EntryDescriptionField> {
             child:
                 currentDescription.isEmpty
                     ? Text(
-                      'No description yet. Tap the edit icon to add one.',
+                      'No description yet, please tap the edit icon to add one.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
