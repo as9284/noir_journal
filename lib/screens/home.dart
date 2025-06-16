@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:noir_journal/models/diary_entry.dart';
 import 'package:noir_journal/widgets/diary_entry_grouped_list.dart';
 import '../constants/ui_constants.dart';
+import '../widgets/icon_picker_dialog.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -125,6 +126,7 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
       );
+      final iconIndex = await showIconPickerDialog(context);
       setState(() {
         _entries.insert(
           0,
@@ -132,7 +134,7 @@ class _HomePageState extends State<HomePage> {
             title: result,
             createdAt: DateTime.now(),
             description: desc ?? '',
-            iconIndex: 0,
+            iconIndex: iconIndex ?? 0,
           ),
         );
       });
