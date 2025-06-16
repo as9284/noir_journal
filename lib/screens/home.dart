@@ -115,7 +115,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _onEntryTap(DiaryEntry entry) {
+  void _onEntryTap(DiaryEntry entry) async {
     if (_isSelecting) {
       setState(() {
         if (_selectedEntries.contains(entry)) {
@@ -125,7 +125,7 @@ class _HomePageState extends State<HomePage> {
         }
       });
     } else {
-      Navigator.push(
+      final result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder:
@@ -145,6 +145,9 @@ class _HomePageState extends State<HomePage> {
               ),
         ),
       );
+      if (result == 'deleted') {
+        await _loadEntries();
+      }
     }
   }
 
