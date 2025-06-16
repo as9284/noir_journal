@@ -126,13 +126,20 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
       );
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2100),
+        helpText: 'Select entry date (for testing)',
+      );
       final iconIndex = await showIconPickerDialog(context);
       setState(() {
         _entries.insert(
           0,
           DiaryEntry(
             title: result,
-            createdAt: DateTime.now(),
+            createdAt: pickedDate ?? DateTime.now(),
             description: desc ?? '',
             iconIndex: iconIndex ?? 0,
           ),

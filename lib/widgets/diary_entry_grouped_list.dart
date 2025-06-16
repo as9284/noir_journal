@@ -24,6 +24,12 @@ class DiaryEntryGroupedList extends StatelessWidget {
       grouped.putIfAbsent(dateKey, () => []).add(entry);
     }
     final dateKeys = grouped.keys.toList();
+    dateKeys.sort((a, b) => b.compareTo(a)); // Newest date first
+    for (final key in grouped.keys) {
+      grouped[key]!.sort(
+        (a, b) => b.createdAt.compareTo(a.createdAt),
+      ); // Newest entry first within group
+    }
     return ListView.builder(
       itemCount: grouped.length + entries.length,
       itemBuilder: (context, index) {
@@ -68,6 +74,38 @@ class DiaryEntryGroupedList extends StatelessWidget {
         date.day == now.day) {
       return 'Today';
     }
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (date.year == yesterday.year &&
+        date.month == yesterday.month &&
+        date.day == yesterday.day) {
+      return 'Yesterday';
+    }
+    // Example: Monday, Jun 16, 2025
+    final weekDay =
+        [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday',
+        ][date.weekday - 1];
+    final month =
+        [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
+        ][date.month - 1];
+    return '$weekDay, $month ${date.day}, ${date.year}';
   }
 }
