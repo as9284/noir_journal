@@ -20,7 +20,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<DiaryEntry> _entries = [];
-  Set<DiaryEntry> _selectedEntries = {};
+  final Set<DiaryEntry> _selectedEntries = {};
   bool get _isSelecting => _selectedEntries.isNotEmpty;
   String _searchQuery = '';
   DateTime? _searchDate;
@@ -95,11 +95,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _onAddEntryPressed(BuildContext context) async {
+  Future<void> _onAddEntryPressed(BuildContext _) async {
     final result = await showTitleDialog(context);
+    if (!mounted) return;
     if (result != null && result.isNotEmpty) {
       final desc = await showDescriptionDialog(context);
+      if (!mounted) return;
       final iconIndex = await showIconPickerDialog(context);
+      if (!mounted) return;
       setState(() {
         _entries.insert(
           0,
@@ -232,18 +235,20 @@ class _HomePageState extends State<HomePage> {
                   final confirmed = await showDialog<bool>(
                     context: context,
                     builder:
-                        (context) => AlertDialog(
+                        (dialogContext) => AlertDialog(
                           title: const Text('Delete Entries?'),
                           content: Text(
-                            'Are you sure you want to delete ${_selectedEntries.length} selected entr${_selectedEntries.length == 1 ? 'y' : 'ies'}?',
+                            'Are you sure you want to delete \\${_selectedEntries.length} selected entr\\${_selectedEntries.length == 1 ? 'y' : 'ies'}?',
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(context, false),
+                              onPressed:
+                                  () => Navigator.pop(dialogContext, false),
                               child: const Text('Cancel'),
                             ),
                             ElevatedButton(
-                              onPressed: () => Navigator.pop(context, true),
+                              onPressed:
+                                  () => Navigator.pop(dialogContext, true),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 foregroundColor: Colors.white,
@@ -253,6 +258,7 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                   );
+                  if (!mounted) return;
                   if (confirmed == true) {
                     setState(() {
                       _entries.removeWhere((e) => _selectedEntries.contains(e));

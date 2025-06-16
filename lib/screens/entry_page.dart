@@ -167,6 +167,7 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
     await _openCloseController.reverse();
     if (mounted) {
       await Future.delayed(const Duration(milliseconds: 10));
+      if (!mounted) return;
       Navigator.of(context).pop();
     }
   }
