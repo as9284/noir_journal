@@ -51,7 +51,9 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
       parent: _editAnimController,
       curve: Curves.easeInOut,
     );
-    _openCloseController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _openCloseController.forward();
+    });
   }
 
   @override
