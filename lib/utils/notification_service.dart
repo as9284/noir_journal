@@ -13,7 +13,7 @@ class NotificationService {
             channelKey: dailyChannelKey,
             channelName: 'Daily Journal Reminder',
             channelDescription: 'Reminds you to write in your journal',
-            defaultColor: Colors.deepPurple,
+            defaultColor: Colors.black,
             importance: NotificationImportance.High,
             channelShowBadge: true,
             icon: 'resource://drawable/ic_stat_notification_icon',

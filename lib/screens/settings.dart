@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:app_settings/app_settings.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../constants/ui_constants.dart';
 import '../utils/notification_service.dart';
+import '../utils/settings_prefs.dart';
+import '../widgets/user_name_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeModeNotifier;
@@ -19,42 +21,27 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = false;
   TimeOfDay? _notificationTime;
   bool _loadingNotification = false;
+  String? _userName;
 
   @override
   void initState() {
     super.initState();
-    _loadVersion();
-    _loadTheme();
-    _loadNotificationSettings();
+    _loadAllSettings();
     NotificationService.initialize();
   }
 
-  Future<void> _loadVersion() async {
-    final info = await PackageInfo.fromPlatform();
+  Future<void> _loadAllSettings() async {
+    final version = await PackageInfo.fromPlatform();
+    final isDark = await SettingsPrefs.getDarkTheme();
+    final notifEnabled = await SettingsPrefs.getNotificationsEnabled();
+    final notifTime = await SettingsPrefs.getNotificationTime();
+    final userName = await SettingsPrefs.getUserName();
     setState(() {
-      _version = info.version;
-    });
-  }
-
-  Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
-    });
-  }
-
-  Future<void> _loadNotificationSettings() async {
-    setState(() => _loadingNotification = true);
-    final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool('notifications_enabled') ?? false;
-    final hour = prefs.getInt('notification_hour');
-    final minute = prefs.getInt('notification_minute');
-    setState(() {
-      _notificationsEnabled = enabled;
-      _notificationTime =
-          (hour != null && minute != null)
-              ? TimeOfDay(hour: hour, minute: minute)
-              : null;
+      _version = version.version;
+      _isDarkTheme = isDark;
+      _notificationsEnabled = notifEnabled;
+      _notificationTime = notifTime;
+      _userName = userName;
       _loadingNotification = false;
     });
   }
@@ -63,12 +50,12 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _isDarkTheme = value;
     });
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkTheme', value);
+    await SettingsPrefs.setDarkTheme(value);
     widget.themeModeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
   }
 
   Future<void> _toggleNotifications(bool value) async {
+    setState(() => _loadingNotification = true);
     if (value) {
       if (!mounted) return;
       final granted = await NotificationService.requestPermission();
@@ -92,7 +79,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ElevatedButton(
                     onPressed: () async {
                       Navigator.pop(ctx);
-                      AppSettings.openAppSettings();
+                      await openAppSettings();
+                      final granted =
+                          await NotificationService.requestPermission();
+                      if (!granted) {
+                        setState(() => _notificationsEnabled = false);
+                      } else {
+                        setState(() => _notificationsEnabled = true);
+                      }
                     },
                     child: const Text('Open Settings'),
                   ),
@@ -100,6 +94,66 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
         );
         await NotificationService.cancelNotifications();
+        setState(() => _loadingNotification = false);
+        return;
+      }
+      bool alarmGranted = true;
+      if (Platform.isAndroid) {
+        final status = await Permission.scheduleExactAlarm.status;
+        if (!status.isGranted) {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder:
+                (ctx) => AlertDialog(
+                  title: const Text('Allow Alarms & Reminders'),
+                  content: const Text(
+                    'To ensure notifications work reliably, please enable "Alarms & Reminders" permission in the app settings.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx, true);
+                        await openAppSettings();
+                      },
+                      child: const Text('Open Settings'),
+                    ),
+                  ],
+                ),
+          );
+          if (confirmed != true) {
+            setState(() => _notificationsEnabled = false);
+            await NotificationService.cancelNotifications();
+            setState(() => _loadingNotification = false);
+            return;
+          }
+          final alarmStatus = await Permission.scheduleExactAlarm.request();
+          alarmGranted = alarmStatus.isGranted;
+        }
+      }
+      if (!alarmGranted) {
+        setState(() => _notificationsEnabled = false);
+        await NotificationService.cancelNotifications();
+        await showDialog(
+          context: context,
+          builder:
+              (ctx) => AlertDialog(
+                title: const Text('Permission Required'),
+                content: const Text(
+                  'Alarms & Reminders permission is required for notifications to work.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+        );
+        setState(() => _loadingNotification = false);
         return;
       }
       if (_notificationTime == null) {
@@ -111,19 +165,27 @@ class _SettingsPageState extends State<SettingsPage> {
         if (picked == null) {
           setState(() => _notificationsEnabled = false);
           await NotificationService.cancelNotifications();
+          setState(() => _loadingNotification = false);
           return;
         }
         setState(() => _notificationTime = picked);
         await NotificationService.scheduleDailyNotification(picked);
+        await SettingsPrefs.setNotificationTime(picked);
       } else {
         await NotificationService.scheduleDailyNotification(_notificationTime!);
       }
-      if (!mounted) return;
-      setState(() => _notificationsEnabled = true);
+      setState(() {
+        _notificationsEnabled = true;
+        _loadingNotification = false;
+      });
+      await SettingsPrefs.setNotificationsEnabled(true);
     } else {
       await NotificationService.cancelNotifications();
-      if (!mounted) return;
-      setState(() => _notificationsEnabled = false);
+      setState(() {
+        _notificationsEnabled = false;
+        _loadingNotification = false;
+      });
+      await SettingsPrefs.setNotificationsEnabled(false);
     }
   }
 
@@ -136,38 +198,18 @@ class _SettingsPageState extends State<SettingsPage> {
     if (picked != null) {
       setState(() => _notificationTime = picked);
       await NotificationService.scheduleDailyNotification(picked);
-      if (!mounted) return;
       setState(() => _notificationsEnabled = true);
+      await SettingsPrefs.setNotificationTime(picked);
     }
   }
 
-  Future<void> _confirmDeleteData() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Delete All Data?'),
-            content: const Text(
-              'Are you sure you want to delete all your data? This action cannot be undone.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('Delete'),
-              ),
-            ],
-          ),
-    );
-    if (!mounted) return;
-    if (confirmed == true) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('All data deleted.')));
+  Future<void> _changeUserName(BuildContext context) async {
+    final result = await showUserNameDialog(context, initialName: _userName);
+    if (result != null && result.trim().isNotEmpty) {
+      await SettingsPrefs.setUserName(result.trim());
+      setState(() {
+        _userName = result.trim();
+      });
     }
   }
 
@@ -207,10 +249,15 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
             ],
           ),
+          const Divider(),
           ListTile(
-            leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text('Delete All Data'),
-            onTap: _confirmDeleteData,
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Your Name'),
+            subtitle: Text(_userName ?? 'Not set'),
+            trailing: TextButton(
+              onPressed: () => _changeUserName(context),
+              child: const Text('Change'),
+            ),
           ),
           const Divider(),
           ListTile(

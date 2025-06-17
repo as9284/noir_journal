@@ -93,8 +93,8 @@ class _HomePageState extends State<HomePage> {
     await prefs.setStringList('diary_entries', entriesJson);
   }
 
-  void _onSettingsPressed(BuildContext context) {
-    Navigator.push(
+  void _onSettingsPressed(BuildContext context) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder:
@@ -102,6 +102,8 @@ class _HomePageState extends State<HomePage> {
                 SettingsPage(themeModeNotifier: globalThemeModeNotifier!),
       ),
     );
+    // Reload the user name after returning from settings
+    await _loadUserName();
   }
 
   Future<void> _onAddEntryPressed(BuildContext _) async {
