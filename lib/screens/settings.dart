@@ -262,7 +262,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
             ],
           ),
-          const Divider(),
+          const Divider(endIndent: 15, indent: 15),
           ListTile(
             leading: const Icon(Icons.person_outline),
             title: const Text('Your Name'),
@@ -272,7 +272,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: const Text('Change'),
             ),
           ),
-          const Divider(),
+          const Divider(endIndent: 15, indent: 15),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('App Version'),
