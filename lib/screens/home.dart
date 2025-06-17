@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   bool get _isSelecting => _selectedEntries.isNotEmpty;
   String _searchQuery = '';
   DateTime? _searchDate;
+  String? _userName;
 
   List<DiaryEntry> get _filteredEntries {
     List<DiaryEntry> filtered = _entries;
@@ -54,6 +55,14 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadEntries();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('user_name');
+    });
   }
 
   Future<void> _loadEntries() async {
@@ -182,7 +191,11 @@ class _HomePageState extends State<HomePage> {
       ),
       appBar: AppBar(
         title: Text(
-          _isSelecting ? '${_selectedEntries.length} selected' : 'Your Journal',
+          _isSelecting
+              ? '${_selectedEntries.length} selected'
+              : _userName != null && _userName!.isNotEmpty
+              ? "${_userName}'s Journal"
+              : 'Your Journal',
         ),
         titleSpacing: 0,
         centerTitle: !(_searchQuery.isNotEmpty || _searchDate != null),

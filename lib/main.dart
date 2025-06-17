@@ -30,20 +30,38 @@ class MainApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeModeNotifier,
       builder: (context, themeMode, _) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: lightTheme,
-          darkTheme: darkTheme,
-          themeMode: themeMode,
-          home: const IntroScreen(),
-          routes: {
-            '/home': (context) => const HomePage(),
-            '/settings':
-                (context) =>
-                    SettingsPage(themeModeNotifier: globalThemeModeNotifier!),
+        return FutureBuilder<bool>(
+          future: _shouldShowIntro(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const MaterialApp(
+                home: Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                ),
+              );
+            }
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: lightTheme,
+              darkTheme: darkTheme,
+              themeMode: themeMode,
+              home: snapshot.data! ? const IntroScreen() : const HomePage(),
+              routes: {
+                '/home': (context) => const HomePage(),
+                '/settings':
+                    (context) => SettingsPage(
+                      themeModeNotifier: globalThemeModeNotifier!,
+                    ),
+              },
+            );
           },
         );
       },
     );
+  }
+
+  Future<bool> _shouldShowIntro() async {
+    final prefs = await SharedPreferences.getInstance();
+    return !(prefs.getBool('intro_seen') ?? false);
   }
 }
