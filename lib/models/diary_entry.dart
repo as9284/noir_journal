@@ -7,7 +7,7 @@ class DiaryEntry {
   final String description;
   final int iconIndex;
 
-  DiaryEntry({
+  const DiaryEntry({
     required this.title,
     required this.createdAt,
     this.description = '',
@@ -24,8 +24,8 @@ class DiaryEntry {
   };
 
   factory DiaryEntry.fromJson(Map<String, dynamic> json) => DiaryEntry(
-    title: json['title'],
-    createdAt: DateTime.parse(json['createdAt']),
+    title: json['title'] as String,
+    createdAt: DateTime.parse(json['createdAt'] as String),
     description: json['description'] ?? '',
     iconIndex: (json['iconIndex'] is int) ? json['iconIndex'] : 0,
   );

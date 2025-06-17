@@ -14,8 +14,8 @@ class _IntroScreenState extends State<IntroScreen>
   bool _showNamePrompt = false;
   final TextEditingController _nameController = TextEditingController();
   bool _nameError = false;
-  late AnimationController _slideController;
-  late Animation<Offset> _slideAnimation;
+  late final AnimationController _slideController;
+  late final Animation<Offset> _slideAnimation;
 
   @override
   void initState() {

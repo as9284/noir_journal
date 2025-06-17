@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
   String? _userName;
 
   List<DiaryEntry> get _filteredEntries {
-    List<DiaryEntry> filtered = _entries;
+    var filtered = _entries;
     if (_searchQuery.isNotEmpty) {
       filtered =
           filtered
@@ -194,9 +194,9 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text(
           _isSelecting
-              ? '${_selectedEntries.length} selected'
+              ? '${_selectedEntries.length} selected'
               : _userName != null && _userName!.isNotEmpty
-              ? "${_userName}'s Journal"
+              ? "$_userName's Journal"
               : 'Your Journal',
         ),
         titleSpacing: 0,
@@ -253,7 +253,7 @@ class _HomePageState extends State<HomePage> {
                         (dialogContext) => AlertDialog(
                           title: const Text('Delete Entries?'),
                           content: Text(
-                            'Are you sure you want to delete \\${_selectedEntries.length} selected entr\\${_selectedEntries.length == 1 ? 'y' : 'ies'}?',
+                            'Are you sure you want to delete ${_selectedEntries.length} selected entr${_selectedEntries.length == 1 ? 'y' : 'ies'}?',
                           ),
                           actions: [
                             TextButton(

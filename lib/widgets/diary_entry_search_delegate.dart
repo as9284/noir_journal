@@ -23,7 +23,7 @@ class DiaryEntrySearchDelegate extends SearchDelegate<String?> {
             .where((e) => e.title.toLowerCase().contains(query.toLowerCase()))
             .toList();
     if (results.isEmpty) {
-      return Center(child: Text('No entries found.'));
+      return const Center(child: Text('No entries found.'));
     }
     return ListView(
       children:

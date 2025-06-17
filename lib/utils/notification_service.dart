@@ -22,7 +22,7 @@ class NotificationService {
   }
 
   static Future<bool> requestPermission() async {
-    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+    var isAllowed = await AwesomeNotifications().isNotificationAllowed();
     if (!isAllowed) {
       isAllowed =
           await AwesomeNotifications().requestPermissionToSendNotifications();
@@ -59,28 +59,17 @@ class NotificationService {
         minute: firstNotificationTime.minute,
         second: 0,
         repeats: true,
-        preciseAlarm: true,
       ),
     );
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notifications_enabled', true);
     await prefs.setInt('notification_hour', time.hour);
     await prefs.setInt('notification_minute', time.minute);
-    await prefs.setBool('notifications_enabled', true);
   }
 
-  static Future<void> cancelNotifications() async {
-    await AwesomeNotifications().cancelAll();
+  static Future<void> cancelDailyNotification() async {
+    await AwesomeNotifications().cancel(dailyNotificationId);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notifications_enabled', false);
-  }
-
-  static Future<TimeOfDay?> getScheduledTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hour = prefs.getInt('notification_hour');
-    final minute = prefs.getInt('notification_minute');
-    if (hour != null && minute != null) {
-      return TimeOfDay(hour: hour, minute: minute);
-    }
-    return null;
   }
 }

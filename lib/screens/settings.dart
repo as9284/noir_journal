@@ -82,6 +82,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       await openAppSettings();
                       final granted =
                           await NotificationService.requestPermission();
+                      if (!mounted) return;
                       if (!granted) {
                         setState(() => _notificationsEnabled = false);
                       } else {
@@ -93,7 +94,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
         );
-        await NotificationService.cancelNotifications();
+        if (!mounted) return;
+        await NotificationService.cancelDailyNotification();
         setState(() => _loadingNotification = false);
         return;
       }
@@ -101,6 +103,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (Platform.isAndroid) {
         final status = await Permission.scheduleExactAlarm.status;
         if (!status.isGranted) {
+          if (!mounted) return;
           final confirmed = await showDialog<bool>(
             context: context,
             builder:
@@ -124,9 +127,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   ],
                 ),
           );
+          if (!mounted) return;
           if (confirmed != true) {
             setState(() => _notificationsEnabled = false);
-            await NotificationService.cancelNotifications();
+            await NotificationService.cancelDailyNotification();
             setState(() => _loadingNotification = false);
             return;
           }
@@ -136,7 +140,8 @@ class _SettingsPageState extends State<SettingsPage> {
       }
       if (!alarmGranted) {
         setState(() => _notificationsEnabled = false);
-        await NotificationService.cancelNotifications();
+        await NotificationService.cancelDailyNotification();
+        if (!mounted) return;
         await showDialog(
           context: context,
           builder:
@@ -153,10 +158,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
         );
+        if (!mounted) return;
         setState(() => _loadingNotification = false);
         return;
       }
       if (_notificationTime == null) {
+        if (!mounted) return;
         final picked = await showTimePicker(
           context: context,
           initialTime: TimeOfDay.now(),
@@ -164,7 +171,7 @@ class _SettingsPageState extends State<SettingsPage> {
         if (!mounted) return;
         if (picked == null) {
           setState(() => _notificationsEnabled = false);
-          await NotificationService.cancelNotifications();
+          await NotificationService.cancelDailyNotification();
           setState(() => _loadingNotification = false);
           return;
         }
@@ -174,13 +181,15 @@ class _SettingsPageState extends State<SettingsPage> {
       } else {
         await NotificationService.scheduleDailyNotification(_notificationTime!);
       }
+      if (!mounted) return;
       setState(() {
         _notificationsEnabled = true;
         _loadingNotification = false;
       });
       await SettingsPrefs.setNotificationsEnabled(true);
     } else {
-      await NotificationService.cancelNotifications();
+      await NotificationService.cancelDailyNotification();
+      if (!mounted) return;
       setState(() {
         _notificationsEnabled = false;
         _loadingNotification = false;
@@ -190,6 +199,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _pickNotificationTime() async {
+    if (!mounted) return;
     final picked = await showTimePicker(
       context: context,
       initialTime: _notificationTime ?? TimeOfDay.now(),
@@ -204,9 +214,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _changeUserName(BuildContext context) async {
+    if (!mounted) return;
     final result = await showUserNameDialog(context, initialName: _userName);
+    if (!mounted) return;
     if (result != null && result.trim().isNotEmpty) {
       await SettingsPrefs.setUserName(result.trim());
+      if (!mounted) return;
       setState(() {
         _userName = result.trim();
       });

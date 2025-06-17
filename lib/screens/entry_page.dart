@@ -16,15 +16,15 @@ class EntryPage extends StatefulWidget {
 }
 
 class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
-  late TextEditingController _descController;
-  late TextEditingController _titleController;
+  late final TextEditingController _descController;
+  late final TextEditingController _titleController;
   bool _editing = false;
   late String _currentDescription;
   late int _currentIconIndex;
-  late AnimationController _openCloseController;
-  late Animation<double> _openCloseAnim;
-  late AnimationController _editAnimController;
-  late Animation<double> _editAnim;
+  late final AnimationController _openCloseController;
+  late final Animation<double> _openCloseAnim;
+  late final AnimationController _editAnimController;
+  late final Animation<double> _editAnim;
 
   @override
   void initState() {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-final entryCardLightColor = Color(0xFFF8F8F8);
-final entryCardDarkColor = Color(0xFF23232A).withValues(alpha: 0.92);
+final entryCardLightColor = const Color(0xFFF8F8F8);
+final entryCardDarkColor = const Color(0xFF23232A).withAlpha(235);
 
 final ThemeData lightTheme = ThemeData(
   brightness: Brightness.light,
@@ -53,7 +53,6 @@ final ThemeData lightTheme = ThemeData(
     ),
   ),
   visualDensity: VisualDensity.adaptivePlatformDensity,
-  // Add spacing theme
   inputDecorationTheme: const InputDecorationTheme(
     contentPadding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
   ),
@@ -119,7 +118,6 @@ final ThemeData darkTheme = ThemeData(
     ),
   ),
   visualDensity: VisualDensity.adaptivePlatformDensity,
-  // Add spacing theme
   inputDecorationTheme: const InputDecorationTheme(
     contentPadding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
   ),

@@ -62,9 +62,9 @@ class DiaryEntryGroupedList extends StatelessWidget {
               return DiaryEntryCard(
                 entry: entry,
                 onTap: () => onTap(entry),
-                onLongPress: () => onLongPress?.call(entry),
+                onLongPress:
+                    onLongPress != null ? () => onLongPress!(entry) : null,
                 selected: selectedEntries?.contains(entry) ?? false,
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
               );
             }
             runningIndex++;
@@ -74,44 +74,13 @@ class DiaryEntryGroupedList extends StatelessWidget {
       },
     );
   }
+}
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final entryDay = DateTime(date.year, date.month, date.day);
-    if (entryDay == today) {
-      return 'Today';
-    }
-    final yesterday = today.subtract(const Duration(days: 1));
-    if (entryDay == yesterday) {
-      return 'Yesterday';
-    }
-    // Example: Monday, Jun 16, 2025
-    final weekDay =
-        [
-          'Monday',
-          'Tuesday',
-          'Wednesday',
-          'Thursday',
-          'Friday',
-          'Saturday',
-          'Sunday',
-        ][date.weekday - 1];
-    final month =
-        [
-          'Jan',
-          'Feb',
-          'Mar',
-          'Apr',
-          'May',
-          'Jun',
-          'Jul',
-          'Aug',
-          'Sep',
-          'Oct',
-          'Nov',
-          'Dec',
-        ][date.month - 1];
-    return '$weekDay, $month ${date.day}, ${date.year}';
-  }
+String _formatDate(DateTime date) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final entryDate = DateTime(date.year, date.month, date.day);
+  if (entryDate == today) return 'Today';
+  if (entryDate == today.subtract(const Duration(days: 1))) return 'Yesterday';
+  return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }

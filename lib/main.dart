@@ -9,7 +9,7 @@ import 'utils/orientation_lock.dart';
 
 ValueNotifier<ThemeMode>? globalThemeModeNotifier;
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await lockPortraitMode();
   await NotificationService.initialize();
@@ -59,9 +59,9 @@ class MainApp extends StatelessWidget {
       },
     );
   }
+}
 
-  Future<bool> _shouldShowIntro() async {
-    final prefs = await SharedPreferences.getInstance();
-    return !(prefs.getBool('intro_seen') ?? false);
-  }
+Future<bool> _shouldShowIntro() async {
+  final prefs = await SharedPreferences.getInstance();
+  return !(prefs.getBool('intro_seen') ?? false);
 }
