@@ -145,8 +145,8 @@ class _DrawerTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     color:
                         isDark
-                            ? Colors.white.withOpacity(0.12)
-                            : Colors.black.withOpacity(0.08),
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.black.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
                   padding: const EdgeInsets.all(10),
