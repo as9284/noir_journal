@@ -49,7 +49,7 @@ class MainApp extends StatelessWidget {
         return FutureBuilder<bool>(
           future: _shouldShowIntro(),
           builder: (context, snapshot) {
-            final showIntro = snapshot.data ?? false;
+            final showIntro = snapshot.hasData ? snapshot.data! : false;
 
             return MaterialApp(
               debugShowCheckedModeBanner: false,
