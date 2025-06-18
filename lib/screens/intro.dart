@@ -93,7 +93,7 @@ class _IntroContent extends StatelessWidget {
               color: isDark ? Colors.white10 : Colors.black12,
             ),
             child: Icon(
-              Icons.emoji_nature,
+              Icons.bookmark,
               size: 64,
               color: isDark ? Colors.white : Colors.black,
             ),
