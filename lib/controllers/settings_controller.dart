@@ -4,7 +4,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../lock/app_lock_manager.dart';
 import '../utils/app_lock_service.dart';
-import '../utils/settings_prefs.dart';
 import '../utils/restart_widget.dart';
 import '../utils/data_operation_dialogs.dart';
 import '../utils/password_dialog.dart';
@@ -33,7 +32,8 @@ class SettingsController extends ChangeNotifier {
   Future<void> _loadAllSettings() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
-      final isDark = await SettingsPrefs.getDarkTheme();
+      final prefs = await SharedPreferences.getInstance();
+      final isDark = prefs.getBool('isDarkTheme') ?? false;
       final lockEnabled = await AppLockService.isLockEnabled();
       final biometricEnabled = await AppLockService.isBiometricEnabled();
 
@@ -57,11 +57,14 @@ class SettingsController extends ChangeNotifier {
     _isDarkTheme = value;
     notifyListeners();
 
-    await SettingsPrefs.setDarkTheme(value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isDarkTheme', value);
     themeModeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
   }
 
   Future<bool> enableAppLock(BuildContext context) async {
+    if (!context.mounted) return false;
+
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -92,6 +95,8 @@ class SettingsController extends ChangeNotifier {
   Future<bool> disableAppLock(BuildContext context) async {
     final storedPin = await AppLockService.getPin();
     final allowBiometric = await AppLockService.isBiometricEnabled();
+
+    if (!context.mounted) return false;
 
     AppLockManager.isLockScreenVisible = true;
     final unlocked = await Navigator.of(context).push(
@@ -135,11 +140,15 @@ class SettingsController extends ChangeNotifier {
   }
 
   Future<void> _handleBiometricSetup(BuildContext context) async {
+    if (!context.mounted) return;
+
     final localAuth = LocalAuthentication();
     final canCheckBiometrics = await localAuth.canCheckBiometrics;
     final isDeviceSupported = await localAuth.isDeviceSupported();
 
     if (canCheckBiometrics && isDeviceSupported) {
+      if (!context.mounted) return;
+
       final enableBiometrics = await DialogUtils.showConfirmationDialog(
         context: context,
         title: 'Enable Biometrics?',
@@ -158,6 +167,8 @@ class SettingsController extends ChangeNotifier {
   }
 
   Future<void> _showRestartDialog(BuildContext context) async {
+    if (!context.mounted) return;
+
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -170,10 +181,14 @@ class SettingsController extends ChangeNotifier {
             actions: [
               TextButton(
                 onPressed: () async {
-                  Navigator.of(context).pop();
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('intro_seen', true);
-                  RestartWidget.restartApp(context);
+                  if (context.mounted) {
+                    RestartWidget.restartApp(context);
+                  }
                 },
                 child: const Text('OK'),
               ),
@@ -184,10 +199,12 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> exportData(BuildContext context) async {
     try {
-      DataOperationDialogs.showLoadingDialog(
-        context,
-        'Preparing encrypted export...',
-      );
+      if (context.mounted) {
+        DataOperationDialogs.showLoadingDialog(
+          context,
+          'Preparing encrypted export...',
+        );
+      }
 
       final result = await DataExportImportService.exportData();
 
@@ -196,21 +213,25 @@ class SettingsController extends ChangeNotifier {
 
         if (result.success && result.exportPassword != null) {
           // Show password dialog first
-          await PasswordInputDialog.showPasswordCopyDialog(
-            context,
-            result.exportPassword!,
-          );
+          if (context.mounted) {
+            await PasswordInputDialog.showPasswordCopyDialog(
+              context,
+              result.exportPassword!,
+            );
+          }
         }
 
-        await DataOperationDialogs.showResultDialog(
-          context,
-          success: result.success,
-          title: result.success ? 'Export Successful' : 'Export Failed',
-          message:
-              result.success
-                  ? 'Your journal has been exported with encryption. The backup file has been saved to your Downloads folder.'
-                  : result.message,
-        );
+        if (context.mounted) {
+          await DataOperationDialogs.showResultDialog(
+            context,
+            success: result.success,
+            title: result.success ? 'Export Successful' : 'Export Failed',
+            message:
+                result.success
+                    ? 'Your journal has been exported with encryption. The backup file has been saved to your Downloads folder.'
+                    : result.message,
+          );
+        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -231,9 +252,13 @@ class SettingsController extends ChangeNotifier {
       context,
     );
     if (!confirmed) return;
-
     try {
-      DataOperationDialogs.showLoadingDialog(context, 'Reading backup file...');
+      if (context.mounted) {
+        DataOperationDialogs.showLoadingDialog(
+          context,
+          'Reading backup file...',
+        );
+      }
 
       final fileCheck = await DataExportImportService.checkBackupFile();
 
@@ -259,12 +284,13 @@ class SettingsController extends ChangeNotifier {
             message:
                 'This backup is encrypted. Please enter the password you received when you created this backup.',
           );
-
           if (password != null && context.mounted) {
-            DataOperationDialogs.showLoadingDialog(
-              context,
-              'Decrypting and importing...',
-            );
+            if (context.mounted) {
+              DataOperationDialogs.showLoadingDialog(
+                context,
+                'Decrypting and importing...',
+              );
+            }
             result = await DataExportImportService.importFromCheckedFile(
               fileCheck,
               password,
@@ -276,7 +302,9 @@ class SettingsController extends ChangeNotifier {
             return;
           }
         } else {
-          DataOperationDialogs.showLoadingDialog(context, 'Importing...');
+          if (context.mounted) {
+            DataOperationDialogs.showLoadingDialog(context, 'Importing...');
+          }
           result = await DataExportImportService.importFromCheckedFile(
             fileCheck,
           );
@@ -284,13 +312,14 @@ class SettingsController extends ChangeNotifier {
             DataOperationDialogs.hideLoadingDialog(context);
           }
         }
-
-        await DataOperationDialogs.showResultDialog(
-          context,
-          success: result.success,
-          title: result.success ? 'Import Successful' : 'Import Failed',
-          message: result.message,
-        );
+        if (context.mounted) {
+          await DataOperationDialogs.showResultDialog(
+            context,
+            success: result.success,
+            title: result.success ? 'Import Successful' : 'Import Failed',
+            message: result.message,
+          );
+        }
       }
     } catch (e) {
       if (context.mounted) {

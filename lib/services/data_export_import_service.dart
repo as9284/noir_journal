@@ -192,45 +192,9 @@ class DataExportImportService {
       }
 
       final entriesList = entriesData['entries'] as List;
-      final importedEntries = <DiaryEntry>[];
+      final importedEntries = _processEntriesFromImport(entriesList);
 
-      for (final entryData in entriesList) {
-        if (entryData is Map<String, dynamic>) {
-          try {
-            final entry = DiaryEntry.fromJson(entryData);
-            importedEntries.add(entry);
-          } catch (e) {
-            debugPrint('Error parsing entry during import: $e');
-            continue;
-          }
-        }
-      }
-
-      if (importedEntries.isEmpty) {
-        return ImportResult(
-          success: false,
-          message: 'No valid entries found in the backup file.',
-        );
-      }
-
-      final existingEntries = await _loadAllEntries();
-      final duplicateCount = _findDuplicates(existingEntries, importedEntries);
-      final uniqueEntries = _removeDuplicates(existingEntries, importedEntries);
-
-      final allEntries = [...existingEntries, ...uniqueEntries];
-      allEntries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      await _saveAllEntries(allEntries);
-
-      return ImportResult(
-        success: true,
-        message:
-            duplicateCount > 0
-                ? 'Successfully imported ${uniqueEntries.length} new entries. $duplicateCount duplicates were skipped.'
-                : 'Successfully imported ${uniqueEntries.length} journal entries.',
-        entriesCount: uniqueEntries.length,
-        duplicatesSkipped: duplicateCount,
-      );
+      return _mergeAndSaveEntries(importedEntries);
     } catch (e) {
       return ImportResult(
         success: false,
@@ -364,51 +328,65 @@ class DataExportImportService {
       }
 
       final entriesList = entriesData['entries'] as List;
-      final importedEntries = <DiaryEntry>[];
+      final importedEntries = _processEntriesFromImport(entriesList);
 
-      for (final entryData in entriesList) {
-        if (entryData is Map<String, dynamic>) {
-          try {
-            final entry = DiaryEntry.fromJson(entryData);
-            importedEntries.add(entry);
-          } catch (e) {
-            debugPrint('Error parsing entry during import: $e');
-            continue;
-          }
-        }
-      }
-
-      if (importedEntries.isEmpty) {
-        return ImportResult(
-          success: false,
-          message: 'No valid entries found in the backup file.',
-        );
-      }
-
-      final existingEntries = await _loadAllEntries();
-      final duplicateCount = _findDuplicates(existingEntries, importedEntries);
-      final uniqueEntries = _removeDuplicates(existingEntries, importedEntries);
-
-      final allEntries = [...existingEntries, ...uniqueEntries];
-      allEntries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      await _saveAllEntries(allEntries);
-
-      return ImportResult(
-        success: true,
-        message:
-            duplicateCount > 0
-                ? 'Successfully imported ${uniqueEntries.length} new entries. $duplicateCount duplicates were skipped.'
-                : 'Successfully imported ${uniqueEntries.length} journal entries.',
-        entriesCount: uniqueEntries.length,
-        duplicatesSkipped: duplicateCount,
-      );
+      return _mergeAndSaveEntries(importedEntries);
     } catch (e) {
       return ImportResult(
         success: false,
         message: 'Failed to import data: ${e.toString()}',
       );
     }
+  }
+
+  // Helper method to process entries list from import data
+  static List<DiaryEntry> _processEntriesFromImport(List entriesList) {
+    final importedEntries = <DiaryEntry>[];
+
+    for (final entryData in entriesList) {
+      if (entryData is Map<String, dynamic>) {
+        try {
+          final entry = DiaryEntry.fromJson(entryData);
+          importedEntries.add(entry);
+        } catch (e) {
+          debugPrint('Error parsing entry during import: $e');
+          continue;
+        }
+      }
+    }
+
+    return importedEntries;
+  }
+
+  // Helper method to merge entries and create import result
+  static Future<ImportResult> _mergeAndSaveEntries(
+    List<DiaryEntry> importedEntries,
+  ) async {
+    if (importedEntries.isEmpty) {
+      return ImportResult(
+        success: false,
+        message: 'No valid entries found in the backup file.',
+      );
+    }
+
+    final existingEntries = await _loadAllEntries();
+    final duplicateCount = _findDuplicates(existingEntries, importedEntries);
+    final uniqueEntries = _removeDuplicates(existingEntries, importedEntries);
+
+    final allEntries = [...existingEntries, ...uniqueEntries];
+    allEntries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    await _saveAllEntries(allEntries);
+
+    return ImportResult(
+      success: true,
+      message:
+          duplicateCount > 0
+              ? 'Successfully imported ${uniqueEntries.length} new entries. $duplicateCount duplicates were skipped.'
+              : 'Successfully imported ${uniqueEntries.length} journal entries.',
+      entriesCount: uniqueEntries.length,
+      duplicatesSkipped: duplicateCount,
+    );
   }
 
   static int _findDuplicates(
