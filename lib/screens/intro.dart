@@ -11,11 +11,7 @@ class IntroScreen extends StatefulWidget {
 
 class _IntroScreenState extends State<IntroScreen>
     with TickerProviderStateMixin {
-  bool _showNamePrompt = false;
-  final TextEditingController _nameController = TextEditingController();
-  bool _nameError = false;
   late final AnimationController _slideController;
-  late final Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -24,27 +20,17 @@ class _IntroScreenState extends State<IntroScreen>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(1, 0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
-    );
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
     _slideController.dispose();
     super.dispose();
   }
 
-  Future<void> _completeIntro(String? name) async {
+  Future<void> _completeIntro() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('intro_seen', true);
-    if (name != null && name.trim().isNotEmpty) {
-      await prefs.setString('user_name', name.trim());
-    }
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
@@ -64,19 +50,6 @@ class _IntroScreenState extends State<IntroScreen>
     );
   }
 
-  void _onGetStarted() {
-    setState(() => _showNamePrompt = true);
-    _slideController.forward(from: 0);
-  }
-
-  void _onNameSubmit() {
-    final name = _nameController.text.trim();
-    setState(() => _nameError = name.isEmpty);
-    if (name.isNotEmpty) {
-      _completeIntro(name);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -86,30 +59,7 @@ class _IntroScreenState extends State<IntroScreen>
         child: Padding(
           padding: const EdgeInsets.all(32.0),
           child: Center(
-            child: Stack(
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  child:
-                      !_showNamePrompt
-                          ? _IntroContent(
-                            isDark: isDark,
-                            onGetStarted: _onGetStarted,
-                          )
-                          : const SizedBox.shrink(),
-                ),
-                if (_showNamePrompt)
-                  SlideTransition(
-                    position: _slideAnimation,
-                    child: _NamePrompt(
-                      isDark: isDark,
-                      nameController: _nameController,
-                      nameError: _nameError,
-                      onNameSubmit: _onNameSubmit,
-                    ),
-                  ),
-              ],
-            ),
+            child: _IntroContent(isDark: isDark, onGetStarted: _completeIntro),
           ),
         ),
       ),
@@ -192,85 +142,6 @@ class _IntroContent extends StatelessWidget {
               child: const Text('Get Started'),
             ),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _NamePrompt extends StatelessWidget {
-  final bool isDark;
-  final TextEditingController nameController;
-  final bool nameError;
-  final VoidCallback onNameSubmit;
-  const _NamePrompt({
-    required this.isDark,
-    required this.nameController,
-    required this.nameError,
-    required this.onNameSubmit,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      key: const ValueKey('namePrompt'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'What is your name?',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        TextField(
-          controller: nameController,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black),
-          decoration: InputDecoration(
-            labelText: 'Your Name',
-            labelStyle: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black54,
-            ),
-            errorText: nameError ? 'Please enter your name' : null,
-            errorStyle: const TextStyle(color: Colors.redAccent),
-            filled: true,
-            fillColor: isDark ? Colors.white10 : Colors.black12,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark ? Colors.white24 : Colors.black26,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark ? Colors.white : Colors.black,
-              ),
-            ),
-          ),
-          cursorColor: isDark ? Colors.white : Colors.black,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => onNameSubmit(),
-        ),
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: onNameSubmit,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(double.infinity, 48),
-            backgroundColor: isDark ? Colors.white : Colors.black,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            foregroundColor: isDark ? Colors.black : Colors.white,
-            elevation: 4,
-          ),
-          child: const Text('Continue'),
         ),
       ],
     );

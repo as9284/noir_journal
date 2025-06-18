@@ -194,9 +194,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text(
           _isSelecting
-              ? '${_selectedEntries.length} selected'
-              : _userName != null && _userName!.isNotEmpty
-              ? "$_userName's Journal"
+              ? '${_selectedEntries.length} selected'
               : 'Your Journal',
         ),
         titleSpacing: 0,

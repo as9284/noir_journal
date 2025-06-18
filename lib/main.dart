@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:noir_journal/utils/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:noir_journal/screens/home.dart';
 import 'package:noir_journal/screens/intro.dart';
@@ -12,7 +11,6 @@ ValueNotifier<ThemeMode>? globalThemeModeNotifier;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await lockPortraitMode();
-  await NotificationService.initialize();
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('isDarkTheme') ?? false;
   globalThemeModeNotifier = ValueNotifier(
