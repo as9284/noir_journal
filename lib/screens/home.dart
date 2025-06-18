@@ -54,6 +54,21 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadEntries();
+
+    // Listen to global data refresh notifier
+    globalDataRefreshNotifier.addListener(_onDataRefresh);
+  }
+
+  @override
+  void dispose() {
+    globalDataRefreshNotifier.removeListener(_onDataRefresh);
+    super.dispose();
+  }
+
+  void _onDataRefresh() {
+    if (mounted) {
+      _loadEntries();
+    }
   }
 
   Future<void> _loadEntries() async {
@@ -92,7 +107,11 @@ class _HomePageState extends State<HomePage> {
                 SettingsPage(themeModeNotifier: globalThemeModeNotifier!),
       ),
     );
-    await _loadEntries();
+    // Always reload entries when returning from settings
+    // This ensures we get any newly imported entries
+    if (mounted) {
+      await _loadEntries();
+    }
   }
 
   Future<void> _onAddEntryPressed(BuildContext _) async {

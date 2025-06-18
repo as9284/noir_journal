@@ -83,16 +83,21 @@ class SettingsController extends ChangeNotifier {
       _lockEnabled = true;
       notifyListeners();
 
-      if (context.mounted) {
-        await _handleBiometricSetup(context);
-        await _showRestartDialog(context);
-      }
+      if (!context.mounted) return false;
+
+      await _handleBiometricSetup(context);
+
+      if (!context.mounted) return false;
+
+      await _showRestartDialog(context);
       return true;
     }
     return false;
   }
 
   Future<bool> disableAppLock(BuildContext context) async {
+    if (!context.mounted) return false;
+
     final storedPin = await AppLockService.getPin();
     final allowBiometric = await AppLockService.isBiometricEnabled();
 
@@ -146,23 +151,23 @@ class SettingsController extends ChangeNotifier {
     final canCheckBiometrics = await localAuth.canCheckBiometrics;
     final isDeviceSupported = await localAuth.isDeviceSupported();
 
-    if (canCheckBiometrics && isDeviceSupported) {
-      if (!context.mounted) return;
+    if (!canCheckBiometrics || !isDeviceSupported) return;
 
-      final enableBiometrics = await DialogUtils.showConfirmationDialog(
-        context: context,
-        title: 'Enable Biometrics?',
-        message:
-            'Would you like to enable biometric authentication for faster unlocking?',
-        confirmText: 'Enable',
-        cancelText: 'Skip',
-      );
+    if (!context.mounted) return;
 
-      if (enableBiometrics == true) {
-        await AppLockService.setBiometricEnabled(true);
-        _biometricEnabled = true;
-        notifyListeners();
-      }
+    final enableBiometrics = await DialogUtils.showConfirmationDialog(
+      context: context,
+      title: 'Enable Biometrics?',
+      message:
+          'Would you like to enable biometric authentication for faster unlocking?',
+      confirmText: 'Enable',
+      cancelText: 'Skip',
+    );
+
+    if (enableBiometrics == true) {
+      await AppLockService.setBiometricEnabled(true);
+      _biometricEnabled = true;
+      notifyListeners();
     }
   }
 
@@ -173,7 +178,7 @@ class SettingsController extends ChangeNotifier {
       context: context,
       barrierDismissible: false,
       builder:
-          (context) => AlertDialog(
+          (dialogContext) => AlertDialog(
             title: const Text('Setup Complete'),
             content: const Text(
               'App lock has been configured. The app will restart to activate the feature.',
@@ -181,13 +186,20 @@ class SettingsController extends ChangeNotifier {
             actions: [
               TextButton(
                 onPressed: () async {
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
+                  // Store the navigator and context references before async operations
+                  final navigator = Navigator.of(dialogContext);
+                  final originalContext = context;
+
+                  // Pop the dialog first
+                  navigator.pop();
+
+                  // Perform async operations
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('intro_seen', true);
-                  if (context.mounted) {
-                    RestartWidget.restartApp(context);
+
+                  // Check if original context is still mounted before restart
+                  if (originalContext.mounted) {
+                    RestartWidget.restartApp(originalContext);
                   }
                 },
                 child: const Text('OK'),
@@ -199,51 +211,49 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> exportData(BuildContext context) async {
     try {
-      if (context.mounted) {
-        DataOperationDialogs.showLoadingDialog(
-          context,
-          'Preparing encrypted export...',
-        );
-      }
+      if (!context.mounted) return;
+
+      DataOperationDialogs.showLoadingDialog(
+        context,
+        'Preparing encrypted export...',
+      );
 
       final result = await DataExportImportService.exportData();
 
-      if (context.mounted) {
-        DataOperationDialogs.hideLoadingDialog(context);
+      if (!context.mounted) return;
 
-        if (result.success && result.exportPassword != null) {
-          // Show password dialog first
-          if (context.mounted) {
-            await PasswordInputDialog.showPasswordCopyDialog(
-              context,
-              result.exportPassword!,
-            );
-          }
-        }
+      DataOperationDialogs.hideLoadingDialog(context);
 
-        if (context.mounted) {
-          await DataOperationDialogs.showResultDialog(
-            context,
-            success: result.success,
-            title: result.success ? 'Export Successful' : 'Export Failed',
-            message:
-                result.success
-                    ? 'Your journal has been exported with encryption. The backup file has been saved to your Downloads folder.'
-                    : result.message,
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        DataOperationDialogs.hideLoadingDialog(context);
-
-        await DataOperationDialogs.showResultDialog(
+      if (result.success && result.exportPassword != null) {
+        // Show password dialog first
+        await PasswordInputDialog.showPasswordCopyDialog(
           context,
-          success: false,
-          title: 'Export Error',
-          message: 'An unexpected error occurred: ${e.toString()}',
+          result.exportPassword!,
         );
       }
+
+      if (!context.mounted) return;
+
+      await DataOperationDialogs.showResultDialog(
+        context,
+        success: result.success,
+        title: result.success ? 'Export Successful' : 'Export Failed',
+        message:
+            result.success
+                ? 'Your journal has been exported with encryption. The backup file has been saved to your Downloads folder.'
+                : result.message,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      DataOperationDialogs.hideLoadingDialog(context);
+
+      await DataOperationDialogs.showResultDialog(
+        context,
+        success: false,
+        title: 'Export Error',
+        message: 'An unexpected error occurred: ${e.toString()}',
+      );
     }
   }
 
@@ -252,86 +262,95 @@ class SettingsController extends ChangeNotifier {
       context,
     );
     if (!confirmed) return;
+
     try {
-      if (context.mounted) {
-        DataOperationDialogs.showLoadingDialog(
-          context,
-          'Reading backup file...',
-        );
-      }
+      if (!context.mounted) return;
+
+      DataOperationDialogs.showLoadingDialog(context, 'Reading backup file...');
 
       final fileCheck = await DataExportImportService.checkBackupFile();
 
-      if (context.mounted) {
-        DataOperationDialogs.hideLoadingDialog(context);
+      if (!context.mounted) return;
 
-        if (!fileCheck.success) {
-          await DataOperationDialogs.showResultDialog(
-            context,
-            success: false,
-            title: 'File Selection Error',
-            message: fileCheck.message,
-          );
-          return;
-        }
+      DataOperationDialogs.hideLoadingDialog(context);
 
-        ImportResult result;
-
-        if (fileCheck.isEncrypted) {
-          final password = await PasswordInputDialog.showPasswordDialog(
-            context,
-            title: 'Enter Backup Password',
-            message:
-                'This backup is encrypted. Please enter the password you received when you created this backup.',
-          );
-          if (password != null && context.mounted) {
-            if (context.mounted) {
-              DataOperationDialogs.showLoadingDialog(
-                context,
-                'Decrypting and importing...',
-              );
-            }
-            result = await DataExportImportService.importFromCheckedFile(
-              fileCheck,
-              password,
-            );
-            if (context.mounted) {
-              DataOperationDialogs.hideLoadingDialog(context);
-            }
-          } else {
-            return;
-          }
-        } else {
-          if (context.mounted) {
-            DataOperationDialogs.showLoadingDialog(context, 'Importing...');
-          }
-          result = await DataExportImportService.importFromCheckedFile(
-            fileCheck,
-          );
-          if (context.mounted) {
-            DataOperationDialogs.hideLoadingDialog(context);
-          }
-        }
-        if (context.mounted) {
-          await DataOperationDialogs.showResultDialog(
-            context,
-            success: result.success,
-            title: result.success ? 'Import Successful' : 'Import Failed',
-            message: result.message,
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        DataOperationDialogs.hideLoadingDialog(context);
-
+      if (!fileCheck.success) {
         await DataOperationDialogs.showResultDialog(
           context,
           success: false,
-          title: 'Import Error',
-          message: 'An unexpected error occurred: ${e.toString()}',
+          title: 'File Selection Error',
+          message: fileCheck.message,
         );
+        return;
       }
+
+      ImportResult result;
+      if (fileCheck.isEncrypted) {
+        final password = await PasswordInputDialog.showPasswordDialog(
+          context,
+          title: 'Enter Backup Password',
+          message:
+              'This backup is encrypted. Please enter the password you received when you created this backup.',
+        );
+        if (password != null) {
+          if (!context.mounted) return;
+
+          DataOperationDialogs.showLoadingDialog(
+            context,
+            'Decrypting and importing...',
+          );
+          result = await DataExportImportService.importFromCheckedFile(
+            fileCheck,
+            password,
+          );
+
+          if (!context.mounted) return;
+
+          DataOperationDialogs.hideLoadingDialog(context);
+        } else {
+          return;
+        }
+      } else {
+        if (!context.mounted) return;
+
+        DataOperationDialogs.showLoadingDialog(context, 'Importing...');
+        result = await DataExportImportService.importFromCheckedFile(fileCheck);
+
+        if (!context.mounted) return;
+
+        DataOperationDialogs.hideLoadingDialog(context);
+      }
+
+      if (!context.mounted) return;
+
+      await DataOperationDialogs.showResultDialog(
+        context,
+        success: result.success,
+        title: result.success ? 'Import Successful' : 'Import Failed',
+        message: result.message,
+      );
+      if (result.success) {
+        // Trigger global data refresh notifier
+        globalDataRefreshNotifier.value++;
+
+        // Small delay to ensure dialog is dismissed and user can see the success message
+        await Future.delayed(const Duration(milliseconds: 1000));
+        if (!context.mounted) return;
+
+        // Navigate back to home screen completely
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+
+      DataOperationDialogs.hideLoadingDialog(context);
+
+      await DataOperationDialogs.showResultDialog(
+        context,
+        success: false,
+        title: 'Import Error',
+        message: 'An unexpected error occurred: ${e.toString()}',
+      );
     }
   }
 }

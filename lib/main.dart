@@ -12,6 +12,7 @@ import 'utils/app_lock_service.dart';
 
 ValueNotifier<ThemeMode>? globalThemeModeNotifier;
 ValueNotifier<bool> globalAppLockNotifier = ValueNotifier(false);
+ValueNotifier<int> globalDataRefreshNotifier = ValueNotifier(0);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -42,10 +42,23 @@ class _PinLockScreenState extends State<PinLockScreen> {
 
     if (widget.allowBiometric && !widget.registerMode) {
       _isLoading = true;
+      // Add a small delay to prevent immediate biometric prompt
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_biometricAttempted && !_isInLockdown) {
-          _biometricAttempted = true;
-          _handleBiometric();
+          // Add a delay to let the UI settle
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted && !_biometricAttempted && !_isInLockdown) {
+              _biometricAttempted = true;
+              _handleBiometric();
+            }
+          });
+        } else {
+          // If not using biometric, stop loading immediately
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
         }
       });
     }
@@ -135,6 +148,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
       setState(() {
         _error =
             'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
+        _isLoading = false;
       });
       return;
     }
@@ -149,9 +163,10 @@ class _PinLockScreenState extends State<PinLockScreen> {
       final canCheck = await _localAuth.canCheckBiometrics;
       final isAvailable = await _localAuth.isDeviceSupported();
       if (!canCheck || !isAvailable) {
+        // Don't show error for unavailable biometrics, just continue with PIN
         if (mounted) {
           setState(() {
-            _error = 'Biometric authentication is not available.';
+            _isLoading = false;
           });
         }
         return;
@@ -160,7 +175,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
         localizedReason: 'Please authenticate to unlock',
         options: const AuthenticationOptions(
           biometricOnly: true,
-          useErrorDialogs: true,
+          useErrorDialogs: false, // Don't show system error dialogs
           stickyAuth: false,
         ),
       );
@@ -170,11 +185,8 @@ class _PinLockScreenState extends State<PinLockScreen> {
         await _animateAndPop();
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Biometric error: ${e.toString()}';
-        });
-      }
+      // Don't show biometric errors to user, just continue with PIN
+      debugPrint('Biometric authentication failed: $e');
     } finally {
       if (mounted && !didAuthenticate) {
         setState(() => _isLoading = false);

@@ -28,7 +28,9 @@ class DataOperationDialogs {
   }
 
   static void hideLoadingDialog(BuildContext context) {
-    Navigator.of(context).pop();
+    if (context.mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 
   static Future<bool> showExportConfirmation(
@@ -76,6 +78,8 @@ class DataOperationDialogs {
     required String title,
     required String message,
   }) async {
+    if (!context.mounted) return;
+
     await DialogUtils.showInfoDialog(
       context: context,
       title: title,

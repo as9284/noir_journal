@@ -13,6 +13,7 @@ class LockWrapper extends StatefulWidget {
 class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   bool _locked = false;
   bool _isCheckingLock = false;
+  DateTime? _lastUnlockTime;
 
   @override
   void initState() {
@@ -37,18 +38,30 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      if (globalAppLockNotifier.value) {
-        if (mounted) {
-          setState(() {
-            _locked = true;
-          });
-        }
+      if (globalAppLockNotifier.value && mounted) {
+        setState(() {
+          _locked = true;
+        });
       }
     }
 
     if (state == AppLifecycleState.resumed) {
-      if (_locked) {
-        _checkLock();
+      if (_locked && mounted) {
+        // Only check lock if enough time has passed since last unlock
+        // This prevents immediate re-locking after operations like import
+        final now = DateTime.now();
+        final shouldCheckLock =
+            _lastUnlockTime == null ||
+            now.difference(_lastUnlockTime!).inSeconds > 5;
+
+        if (shouldCheckLock) {
+          _checkLock();
+        } else {
+          // Reset lock state without showing lock screen
+          setState(() {
+            _locked = false;
+          });
+        }
       }
     }
   }
@@ -66,6 +79,11 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
         _locked = !unlocked;
         _isCheckingLock = false;
       });
+
+      // Record successful unlock time
+      if (unlocked) {
+        _lastUnlockTime = DateTime.now();
+      }
     }
   }
 
