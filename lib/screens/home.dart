@@ -9,6 +9,7 @@ import 'package:noir_journal/models/diary_entry.dart';
 import 'package:noir_journal/widgets/diary_entry_grouped_list.dart';
 import '../constants/ui_constants.dart';
 import 'package:noir_journal/widgets/app_drawer.dart';
+import '../utils/dialog_utils.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -272,35 +273,13 @@ class _HomePageState extends State<HomePage> {
     return _isSelecting
         ? FloatingActionButton.extended(
           onPressed: () async {
-            final confirmed = await showDialog<bool>(
+            final confirmed = await DialogUtils.showConfirmationDialog(
               context: context,
-              builder:
-                  (dialogContext) => AlertDialog(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    title: const Text('Delete Entries?'),
-                    content: Text(
-                      'Are you sure you want to delete ${_selectedEntries.length} selected entr${_selectedEntries.length == 1 ? 'y' : 'ies'}?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext, false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(dialogContext, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
+              title: 'Delete Entries?',
+              message:
+                  'Are you sure you want to delete ${_selectedEntries.length} selected entr${_selectedEntries.length == 1 ? 'y' : 'ies'}?',
+              confirmText: 'Delete',
+              isDestructive: true,
             );
             if (!mounted) return;
             if (confirmed == true) {

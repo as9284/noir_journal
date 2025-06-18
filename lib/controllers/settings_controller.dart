@@ -8,6 +8,7 @@ import '../utils/settings_prefs.dart';
 import '../utils/restart_widget.dart';
 import '../utils/data_operation_dialogs.dart';
 import '../utils/password_dialog.dart';
+import '../utils/dialog_utils.dart';
 import '../main.dart';
 import '../widgets/pin_lock_screen.dart';
 import '../services/data_export_import_service.dart';
@@ -139,26 +140,13 @@ class SettingsController extends ChangeNotifier {
     final isDeviceSupported = await localAuth.isDeviceSupported();
 
     if (canCheckBiometrics && isDeviceSupported) {
-      final enableBiometrics = await showDialog<bool>(
+      final enableBiometrics = await DialogUtils.showConfirmationDialog(
         context: context,
-        barrierDismissible: false,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Enable Biometrics?'),
-              content: const Text(
-                'Would you like to enable biometric authentication for faster unlocking?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Skip'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Enable'),
-                ),
-              ],
-            ),
+        title: 'Enable Biometrics?',
+        message:
+            'Would you like to enable biometric authentication for faster unlocking?',
+        confirmText: 'Enable',
+        cancelText: 'Skip',
       );
 
       if (enableBiometrics == true) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dialog_utils.dart';
 
 class DataOperationDialogs {
   static Future<void> showLoadingDialog(
@@ -34,62 +35,37 @@ class DataOperationDialogs {
     BuildContext context,
     int entriesCount,
   ) async {
-    final result = await showDialog<bool>(
+    if (entriesCount == 0) {
+      await DialogUtils.showInfoDialog(
+        context: context,
+        title: 'Export Data',
+        message: 'You have no journal entries to export.',
+        icon: Icons.info_outline,
+      );
+      return false;
+    }
+
+    final result = await DialogUtils.showConfirmationDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Export Data'),
-            content: Text(
-              entriesCount == 0
-                  ? 'You have no journal entries to export.'
-                  : 'This will export all your $entriesCount journal entries to a backup file that you can share or save.\n\nContinue?',
-            ),
-            actions: [
-              if (entriesCount > 0) ...[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Export'),
-                ),
-              ] else ...[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('OK'),
-                ),
-              ],
-            ],
-          ),
+      title: 'Export Data',
+      message:
+          'This will export all your $entriesCount journal entries to a backup file that you can share or save.\n\nContinue?',
+      confirmText: 'Export',
     );
     return result ?? false;
   }
 
   static Future<bool> showImportConfirmation(BuildContext context) async {
-    final result = await showDialog<bool>(
+    final result = await DialogUtils.showConfirmationDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Import Data'),
-            content: const Text(
-              'This will import journal entries from a backup file.\n\n'
-              '• Your existing entries will not be deleted\n'
-              '• Duplicate entries will be skipped automatically\n'
-              '• Only valid journal entries will be imported\n\n'
-              'Continue?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Choose File'),
-              ),
-            ],
-          ),
+      title: 'Import Data',
+      message:
+          'This will import journal entries from a backup file.\n\n'
+          '• Your existing entries will not be deleted\n'
+          '• Duplicate entries will be skipped automatically\n'
+          '• Only valid journal entries will be imported\n\n'
+          'Continue?',
+      confirmText: 'Choose File',
     );
     return result ?? false;
   }
@@ -100,28 +76,12 @@ class DataOperationDialogs {
     required String title,
     required String message,
   }) async {
-    await showDialog(
+    await DialogUtils.showInfoDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Row(
-              children: [
-                Icon(
-                  success ? Icons.check_circle : Icons.error,
-                  color: success ? Colors.green : Colors.red,
-                ),
-                const SizedBox(width: 8),
-                Text(title),
-              ],
-            ),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
+      title: title,
+      message: message,
+      icon: success ? Icons.check_circle : Icons.error,
+      iconColor: success ? Colors.green : Colors.red,
     );
   }
 }

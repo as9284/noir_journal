@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/diary_icons.dart';
+import '../utils/dialog_utils.dart';
 
 class EntryPage extends StatefulWidget {
   final DiaryEntry entry;
@@ -113,35 +114,13 @@ class _EntryPageState extends State<EntryPage> {
   }
 
   Future<void> _deleteEntry() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await DialogUtils.showConfirmationDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text('Delete Entry?'),
-            content: const Text(
-              'Are you sure you want to delete this entry? This action cannot be undone.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('Delete'),
-              ),
-            ],
-          ),
+      title: 'Delete Entry?',
+      message:
+          'Are you sure you want to delete this entry? This action cannot be undone.',
+      confirmText: 'Delete',
+      isDestructive: true,
     );
 
     if (confirmed == true) {
