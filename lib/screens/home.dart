@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:noir_journal/screens/settings.dart';
 import 'package:noir_journal/main.dart';
 import 'package:noir_journal/screens/entry_page.dart';
+import 'package:noir_journal/screens/create_entry_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:noir_journal/models/diary_entry.dart';
 import 'package:noir_journal/widgets/diary_entry_grouped_list.dart';
 import '../constants/ui_constants.dart';
-import '../widgets/icon_picker_dialog.dart';
 import 'package:noir_journal/widgets/app_drawer.dart';
-import 'package:noir_journal/utils/entry_dialogs.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -96,23 +95,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _onAddEntryPressed(BuildContext _) async {
-    final result = await showTitleDialog(context);
-    if (!mounted) return;
-    if (result != null && result.isNotEmpty) {
-      final desc = await showDescriptionDialog(context);
-      if (!mounted) return;
-      final iconIndex = await showIconPickerDialog(context);
-      if (!mounted) return;
+    final result = await Navigator.push<DiaryEntry>(
+      context,
+      MaterialPageRoute(builder: (context) => const CreateEntryPage()),
+    );
+
+    if (result != null) {
       setState(() {
-        _entries.insert(
-          0,
-          DiaryEntry(
-            title: result,
-            createdAt: DateTime.now(),
-            description: desc ?? '',
-            iconIndex: iconIndex ?? 0,
-          ),
-        );
+        _entries.insert(0, result);
       });
       await _saveEntries();
     }
