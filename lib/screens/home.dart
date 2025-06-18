@@ -24,7 +24,6 @@ class _HomePageState extends State<HomePage> {
   bool get _isSelecting => _selectedEntries.isNotEmpty;
   String _searchQuery = '';
   DateTime? _searchDate;
-  String? _userName;
 
   List<DiaryEntry> get _filteredEntries {
     var filtered = _entries;
@@ -55,14 +54,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadEntries();
-    _loadUserName();
-  }
-
-  Future<void> _loadUserName() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _userName = prefs.getString('user_name');
-    });
   }
 
   Future<void> _loadEntries() async {
@@ -77,7 +68,6 @@ class _HomePageState extends State<HomePage> {
                 return DiaryEntry.fromJson(decoded);
               }
             } catch (_) {}
-            // Legacy string entry
             return DiaryEntry(
               title: e,
               createdAt: DateTime.now(),
@@ -102,8 +92,6 @@ class _HomePageState extends State<HomePage> {
                 SettingsPage(themeModeNotifier: globalThemeModeNotifier!),
       ),
     );
-    // Reload the user name after returning from settings
-    await _loadUserName();
   }
 
   Future<void> _onAddEntryPressed(BuildContext _) async {
