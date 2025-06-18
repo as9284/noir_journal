@@ -178,7 +178,7 @@ class _HomePageState extends State<HomePage> {
           });
         },
         onSettings: () => _onSettingsPressed(context),
-        version: 'v1.0.0',
+        version: "",
       ),
       appBar: AppBar(
         title: Text(
