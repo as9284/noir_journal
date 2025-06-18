@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
-import 'package:noir_journal/theme/app_theme.dart';
 
 class DiaryEntryCard extends StatelessWidget {
   final DiaryEntry entry;
@@ -8,6 +7,9 @@ class DiaryEntryCard extends StatelessWidget {
   final bool selected;
   final VoidCallback? onLongPress;
   final EdgeInsetsGeometry? padding;
+  final bool isInGroup;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
 
   const DiaryEntryCard({
     super.key,
@@ -16,62 +18,192 @@ class DiaryEntryCard extends StatelessWidget {
     this.onLongPress,
     this.selected = false,
     this.padding,
+    this.isInGroup = false,
+    this.isFirstInGroup = false,
+    this.isLastInGroup = false,
   });
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (isInGroup) {
+      return _buildGroupedCard(theme);
+    } else {
+      return _buildStandaloneCard(theme);
+    }
+  }
+
+  Widget _buildGroupedCard(ThemeData theme) {
+    BorderRadius? borderRadius;
+    if (selected) {
+      if (isFirstInGroup && isLastInGroup) {
+        borderRadius = BorderRadius.circular(12);
+      } else if (isFirstInGroup) {
+        borderRadius = const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        );
+      } else if (isLastInGroup) {
+        borderRadius = const BorderRadius.only(
+          bottomLeft: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        );
+      }
+    }
+
+    return Container(
+      decoration:
+          selected
+              ? BoxDecoration(
+                color: theme.colorScheme.primary.withAlpha(25),
+                border: Border.all(color: theme.colorScheme.primary, width: 2),
+                borderRadius: borderRadius,
+              )
+              : null,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 16.0,
+            ),
+            child: _buildCardContent(theme),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStandaloneCard(ThemeData theme) {
     return Padding(
       padding: padding ?? EdgeInsets.zero,
-      child: Card(
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: selected ? 0 : 4,
-        color:
-            selected
-                ? Theme.of(context).colorScheme.primary.withAlpha(30)
-                : (Theme.of(context).brightness == Brightness.dark
-                    ? entryCardDarkColor
-                    : entryCardLightColor),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration:
+      child: Container(
+        decoration: BoxDecoration(
+          color:
               selected
-                  ? BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2.5,
+                  ? theme.colorScheme.primary.withAlpha(25)
+                  : theme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow:
+              selected
+                  ? []
+                  : [
+                    BoxShadow(
+                      color: theme.shadowColor.withAlpha(25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                  )
-                  : null,
+                  ],
+          border: Border.all(
+            color:
+                selected
+                    ? theme.colorScheme.primary
+                    : theme.dividerColor.withAlpha(51),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            splashColor: Theme.of(context).colorScheme.primary.withAlpha(20),
-            highlightColor: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
             onTap: onTap,
             onLongPress: onLongPress,
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 16.0,
               ),
-              leading: Icon(
-                entry.icon,
-                size: 36,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: Text(
-                entry.title,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              trailing:
-                  selected
-                      ? const Icon(Icons.check_circle, color: Colors.red)
-                      : null,
+              child: _buildCardContent(theme),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildCardContent(ThemeData theme) {
+    return Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color:
+                selected
+                    ? theme.colorScheme.primary.withAlpha(51)
+                    : theme.colorScheme.primary.withAlpha(25),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(entry.icon, size: 24, color: theme.colorScheme.primary),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.title,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (entry.description.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  entry.description,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withAlpha(153),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const SizedBox(height: 4),
+              Text(
+                _formatTime(entry.createdAt),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withAlpha(102),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (selected)
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check,
+              size: 18,
+              color: theme.colorScheme.onPrimary,
+            ),
+          )
+        else
+          Icon(
+            Icons.chevron_right,
+            color: theme.colorScheme.onSurface.withAlpha(102),
+            size: 20,
+          ),
+      ],
+    );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '$displayHour:$minute $period';
   }
 }

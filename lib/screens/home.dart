@@ -162,7 +162,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       drawer: AppDrawer(
         entries: _entries,
         onSearchTitle: (query) {
@@ -186,6 +189,9 @@ class _HomePageState extends State<HomePage> {
         ),
         titleSpacing: 0,
         centerTitle: !(_searchQuery.isNotEmpty || _searchDate != null),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           if (_searchQuery.isNotEmpty || _searchDate != null)
             IconButton(
@@ -211,71 +217,119 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(width: DiaryPaddings.horizontal),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child:
-            _entries.isEmpty
-                ? Center(
-                  child: Text(
-                    'No diary entries yet.',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                )
-                : DiaryEntryGroupedList(
+      body:
+          _entries.isEmpty
+              ? _buildEmptyState()
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: DiaryEntryGroupedList(
                   entries: _filteredEntries,
                   onTap: _onEntryTap,
                   onLongPress: _onEntryLongPress,
                   selectedEntries: _selectedEntries,
                 ),
-      ),
-      floatingActionButton:
-          _isSelecting
-              ? FloatingActionButton(
-                onPressed: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder:
-                        (dialogContext) => AlertDialog(
-                          title: const Text('Delete Entries?'),
-                          content: Text(
-                            'Are you sure you want to delete ${_selectedEntries.length} selected entr${_selectedEntries.length == 1 ? 'y' : 'ies'}?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed:
-                                  () => Navigator.pop(dialogContext, false),
-                              child: const Text('Cancel'),
-                            ),
-                            ElevatedButton(
-                              onPressed:
-                                  () => Navigator.pop(dialogContext, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                  );
-                  if (!mounted) return;
-                  if (confirmed == true) {
-                    setState(() {
-                      _entries.removeWhere((e) => _selectedEntries.contains(e));
-                      _selectedEntries.clear();
-                    });
-                    await _saveEntries();
-                  }
-                },
-                tooltip: 'Delete',
-                backgroundColor: Colors.red,
-                child: const Icon(Icons.delete),
-              )
-              : FloatingActionButton(
-                onPressed: () => _onAddEntryPressed(context),
-                tooltip: 'Add Entry',
-                child: const Icon(Icons.add),
               ),
+      floatingActionButton: _buildFloatingActionButton(),
     );
+  }
+
+  Widget _buildEmptyState() {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.colorScheme.primary.withAlpha(25),
+              border: Border.all(
+                color: theme.colorScheme.primary.withAlpha(51),
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              Icons.book_outlined,
+              size: 60,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No diary entries yet',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Start your journaling journey by\ncreating your first entry',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurface.withAlpha(179),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return _isSelecting
+        ? FloatingActionButton.extended(
+          onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder:
+                  (dialogContext) => AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    title: const Text('Delete Entries?'),
+                    content: Text(
+                      'Are you sure you want to delete ${_selectedEntries.length} selected entr${_selectedEntries.length == 1 ? 'y' : 'ies'}?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+            );
+            if (!mounted) return;
+            if (confirmed == true) {
+              setState(() {
+                _entries.removeWhere((e) => _selectedEntries.contains(e));
+                _selectedEntries.clear();
+              });
+              await _saveEntries();
+            }
+          },
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.delete),
+          label: Text('Delete (${_selectedEntries.length})'),
+        )
+        : FloatingActionButton(
+          onPressed: () => _onAddEntryPressed(context),
+          tooltip: 'Add Entry',
+          child: const Icon(Icons.add),
+        );
   }
 }
