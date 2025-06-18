@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/entry_description_field.dart';
-import '../constants/ui_constants.dart';
 import '../constants/diary_icons.dart';
 
 class EntryPage extends StatefulWidget {
@@ -15,92 +13,87 @@ class EntryPage extends StatefulWidget {
   State<EntryPage> createState() => _EntryPageState();
 }
 
-class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
-  late final TextEditingController _descController;
+class _EntryPageState extends State<EntryPage> {
   late final TextEditingController _titleController;
-  bool _editing = false;
-  late String _currentDescription;
-  late int _currentIconIndex;
-  late final AnimationController _openCloseController;
-  late final Animation<double> _openCloseAnim;
-  late final AnimationController _editAnimController;
-  late final Animation<double> _editAnim;
+  late final TextEditingController _descriptionController;
+  late int _selectedIconIndex;
+  bool _isEditing = false;
+  bool _hasChanges = false;
 
   @override
   void initState() {
     super.initState();
-    _currentDescription = widget.entry.description;
-    _currentIconIndex = widget.entry.iconIndex;
-    _descController = TextEditingController(text: widget.entry.description);
     _titleController = TextEditingController(text: widget.entry.title);
-    _openCloseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-      reverseDuration: const Duration(milliseconds: 200),
+    _descriptionController = TextEditingController(
+      text: widget.entry.description,
     );
-    _openCloseAnim = CurvedAnimation(
-      parent: _openCloseController,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-    _editAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
-    _editAnim = CurvedAnimation(
-      parent: _editAnimController,
-      curve: Curves.easeInOut,
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 120), () {
-        _openCloseController.forward();
-      });
-    });
+    _selectedIconIndex = widget.entry.iconIndex;
+
+    _titleController.addListener(_onTextChanged);
+    _descriptionController.addListener(_onTextChanged);
   }
 
   @override
   void dispose() {
-    _descController.dispose();
-    _openCloseController.dispose();
-    _editAnimController.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
-  void _startEdit() {
-    setState(() => _editing = true);
-    _editAnimController.duration = const Duration(milliseconds: 350);
-    _editAnimController.forward(from: 0);
+  void _onTextChanged() {
+    final hasChanges =
+        _titleController.text != widget.entry.title ||
+        _descriptionController.text != widget.entry.description ||
+        _selectedIconIndex != widget.entry.iconIndex;
+
+    if (_hasChanges != hasChanges) {
+      setState(() {
+        _hasChanges = hasChanges;
+      });
+    }
   }
 
-  void _cancelEdit() {
-    _editAnimController.duration = const Duration(milliseconds: 180);
-    _editAnimController.reverse();
-    Future.delayed(const Duration(milliseconds: 120), () {
-      if (mounted) {
-        setState(() {
-          _editing = false;
-          _descController.text = _currentDescription;
-          _currentIconIndex = widget.entry.iconIndex;
-          _titleController.text = widget.entry.title;
-        });
-      }
-    });
-  }
-
-  Future<void> _saveDescription() async {
-    final updated = DiaryEntry(
-      title: _titleController.text.trim(),
-      createdAt: widget.entry.createdAt,
-      description: _descController.text.trim(),
-      iconIndex: _currentIconIndex,
-    );
-    widget.onUpdate?.call(updated);
+  void _startEditing() {
     setState(() {
-      _editing = false;
-      _currentDescription = updated.description;
-      _currentIconIndex = updated.iconIndex;
-      _titleController.text = updated.title;
+      _isEditing = true;
     });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _isEditing = false;
+      _titleController.text = widget.entry.title;
+      _descriptionController.text = widget.entry.description;
+      _selectedIconIndex = widget.entry.iconIndex;
+      _hasChanges = false;
+    });
+  }
+
+  Future<void> _saveChanges() async {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Title cannot be empty')));
+      return;
+    }
+
+    final updatedEntry = DiaryEntry(
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      createdAt: widget.entry.createdAt,
+      iconIndex: _selectedIconIndex,
+    );
+
+    widget.onUpdate?.call(updatedEntry);
+    await _saveToPreferences(updatedEntry);
+
+    setState(() {
+      _isEditing = false;
+      _hasChanges = false;
+    });
+  }
+
+  Future<void> _saveToPreferences(DiaryEntry updatedEntry) async {
     final prefs = await SharedPreferences.getInstance();
     final entriesJson = prefs.getStringList('diary_entries') ?? [];
     final updatedJson =
@@ -111,7 +104,7 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
             );
             if (decoded.title == widget.entry.title &&
                 decoded.createdAt == widget.entry.createdAt) {
-              return jsonEncode(updated.toJson());
+              return jsonEncode(updatedEntry.toJson());
             }
           } catch (_) {}
           return e;
@@ -124,8 +117,13 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
       context: context,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             title: const Text('Delete Entry?'),
-            content: const Text('Are you sure you want to delete this entry?'),
+            content: const Text(
+              'Are you sure you want to delete this entry? This action cannot be undone.',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -136,12 +134,16 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: const Text('Delete'),
               ),
             ],
           ),
     );
+
     if (confirmed == true) {
       final prefs = await SharedPreferences.getInstance();
       final entriesJson = prefs.getStringList('diary_entries') ?? [];
@@ -157,162 +159,472 @@ class _EntryPageState extends State<EntryPage> with TickerProviderStateMixin {
             return true;
           }).toList();
       await prefs.setStringList('diary_entries', updatedJson);
+
       if (mounted) {
         Navigator.of(context).pop('deleted');
       }
     }
   }
 
-  void _closePage() async {
-    await _openCloseController.reverse();
-    if (mounted) {
-      await Future.delayed(const Duration(milliseconds: 10));
-      if (!mounted) return;
-      Navigator.of(context).pop();
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? Colors.black : Colors.white;
+    final theme = Theme.of(context);
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor:
-            isDark ? Colors.black.withAlpha(128) : Colors.white.withAlpha(128),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _closePage,
-        ),
-        title: Text("Diary Entry"),
+        title: Text(_isEditing ? 'Edit Entry' : 'Entry Details'),
         centerTitle: true,
-        titleSpacing: DiaryPaddings.horizontal,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
-          if (!_editing) ...[
+          if (!_isEditing) ...[
             IconButton(
               icon: const Icon(Icons.edit),
-              tooltip: 'Edit Description',
-              onPressed: _startEdit,
+              tooltip: 'Edit Entry',
+              onPressed: _startEditing,
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: 'Delete Entry',
               onPressed: _deleteEntry,
             ),
-          ],
-          if (_editing) ...[
-            IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: 'Cancel',
-              onPressed: _cancelEdit,
+          ] else ...[
+            TextButton(
+              onPressed: _hasChanges ? _saveChanges : null,
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  color:
+                      _hasChanges
+                          ? theme.colorScheme.primary
+                          : theme.disabledColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.save),
-              tooltip: 'Save',
-              onPressed: _saveDescription,
-            ),
           ],
-          const SizedBox(width: DiaryPaddings.horizontal),
+          const SizedBox(width: 8),
         ],
       ),
-      backgroundColor: backgroundColor,
-      body: FadeTransition(
-        opacity: _openCloseAnim,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.05),
-            end: Offset.zero,
-          ).animate(_openCloseAnim),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeaderSection(theme),
+            const SizedBox(height: 24),
+            _buildTitleSection(theme),
+            const SizedBox(height: 20),
+            _buildDescriptionSection(theme),
+            const SizedBox(height: 20),
+            if (_isEditing) _buildIconSection(theme),
+            if (!_isEditing) _buildMetadataSection(theme),
+          ],
+        ),
+      ),
+      floatingActionButton:
+          _isEditing
+              ? FloatingActionButton(
+                onPressed: _cancelEditing,
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                foregroundColor: theme.colorScheme.onSurface,
+                child: const Icon(Icons.close),
+              )
+              : null,
+    );
+  }
+
+  Widget _buildHeaderSection(ThemeData theme) {
+    final createdAt = widget.entry.createdAt;
+    final timeString =
+        '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
+    final dateString =
+        '${_getWeekday(createdAt.weekday)}, ${_getMonth(createdAt.month)} ${createdAt.day}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors:
+              theme.brightness == Brightness.dark
+                  ? [Colors.grey[800]!, Colors.grey[850]!]
+                  : [
+                    theme.colorScheme.primary.withAlpha(25),
+                    theme.colorScheme.primary.withAlpha(13),
+                  ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary.withAlpha(51),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withAlpha(25),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.primary.withAlpha(51),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              DiaryIcons.all[_selectedIconIndex],
+              size: 30,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      DiaryIcons.all[_currentIconIndex],
-                      size: 40,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child:
-                          _editing
-                              ? TextField(
-                                controller: _titleController,
-                                maxLines: 2,
-                                minLines: 1,
-                                autofocus: true,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.1,
-                                ),
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: 'Title',
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                              )
-                              : Text(
-                                _titleController.text,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.1,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: EntryDescriptionField(
-                    editing: _editing,
-                    controller: _descController,
-                    currentDescription: _currentDescription,
-                    editAnim: _editAnim,
-                    isDark: isDark,
-                    selectedIcon: DiaryIcons.all[_currentIconIndex],
-                    onIconChanged:
-                        _editing
-                            ? (icon) {
-                              setState(() {
-                                _currentIconIndex = DiaryIcons.all.indexOf(
-                                  icon,
-                                );
-                              });
-                            }
-                            : null,
+                Text(
+                  timeString,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                const SizedBox(height: 16),
-                AnimatedOpacity(
-                  opacity: _editing ? 1 : 0.5,
-                  duration: const Duration(milliseconds: 400),
-                  child: Text(
-                    'Created:  ${_formatDate(widget.entry.createdAt)}',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: isDark ? Colors.white54 : Colors.black54,
-                    ),
-                    textAlign: TextAlign.left,
+                const SizedBox(height: 4),
+                Text(
+                  dateString,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withAlpha(179),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
+  }
+
+  Widget _buildTitleSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.title, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Title',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow:
+                _isEditing
+                    ? []
+                    : [
+                      BoxShadow(
+                        color: theme.shadowColor.withAlpha(25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            border: Border.all(
+              color:
+                  _isEditing
+                      ? theme.colorScheme.primary.withAlpha(77)
+                      : theme.dividerColor.withAlpha(51),
+              width: 1,
+            ),
+          ),
+          child:
+              _isEditing
+                  ? TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      hintText: 'Enter title...',
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16),
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(128),
+                      ),
+                    ),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                  )
+                  : Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      _titleController.text,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDescriptionSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.description, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Description',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          constraints: BoxConstraints(minHeight: _isEditing ? 120 : 80),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow:
+                _isEditing
+                    ? []
+                    : [
+                      BoxShadow(
+                        color: theme.shadowColor.withAlpha(25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            border: Border.all(
+              color:
+                  _isEditing
+                      ? theme.colorScheme.primary.withAlpha(77)
+                      : theme.dividerColor.withAlpha(51),
+              width: 1,
+            ),
+          ),
+          child:
+              _isEditing
+                  ? TextField(
+                    controller: _descriptionController,
+                    maxLines: null,
+                    minLines: 5,
+                    decoration: InputDecoration(
+                      hintText: 'Tell me about your day...',
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16),
+                      hintStyle: TextStyle(
+                        color: theme.colorScheme.onSurface.withAlpha(128),
+                      ),
+                    ),
+                    style: theme.textTheme.bodyMedium,
+                    textCapitalization: TextCapitalization.sentences,
+                  )
+                  : Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      _descriptionController.text.isEmpty
+                          ? 'No description added'
+                          : _descriptionController.text,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color:
+                            _descriptionController.text.isEmpty
+                                ? theme.colorScheme.onSurface.withAlpha(128)
+                                : theme.colorScheme.onSurface,
+                        fontStyle:
+                            _descriptionController.text.isEmpty
+                                ? FontStyle.italic
+                                : null,
+                      ),
+                    ),
+                  ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIconSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.emoji_emotions,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Choose an Icon',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: theme.colorScheme.primary.withAlpha(77),
+              width: 1,
+            ),
+          ),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 6,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+            ),
+            itemCount: DiaryIcons.all.length,
+            itemBuilder: (context, index) {
+              final isSelected = index == _selectedIconIndex;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedIconIndex = index;
+                    _onTextChanged();
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected
+                            ? theme.colorScheme.primary.withAlpha(51)
+                            : theme.colorScheme.primary.withAlpha(13),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color:
+                          isSelected
+                              ? theme.colorScheme.primary
+                              : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    DiaryIcons.all[index],
+                    size: 24,
+                    color:
+                        isSelected
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface.withAlpha(128),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetadataSection(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withAlpha(51),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.dividerColor.withAlpha(51), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 16,
+                color: theme.colorScheme.onSurface.withAlpha(128),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Entry Details',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withAlpha(128),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Created: ${_formatDateTime(widget.entry.createdAt)}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withAlpha(179),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final date = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    final time =
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    return '$date at $time';
+  }
+
+  String _getWeekday(int weekday) {
+    const weekdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    return weekdays[weekday - 1];
+  }
+
+  String _getMonth(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return months[month - 1];
   }
 }
