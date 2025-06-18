@@ -73,7 +73,7 @@ class MainApp extends StatelessWidget {
                 child: showIntro ? const IntroScreen() : const HomePage(),
               ),
               routes: {
-                '/home': (context) => const HomePage(),
+                '/home': (context) => const LockWrapper(child: HomePage()),
                 '/settings':
                     (context) =>
                         SettingsPage(themeNotifier: globalThemeNotifier!),

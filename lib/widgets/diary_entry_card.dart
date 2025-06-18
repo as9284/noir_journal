@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
+import 'package:noir_journal/widgets/mood_selector.dart';
 
 class DiaryEntryCard extends StatelessWidget {
   final DiaryEntry entry;
@@ -144,14 +145,32 @@ class DiaryEntryCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                entry.title,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      entry.title,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (entry.mood != null) ...[
+                    const SizedBox(width: 8),
+                    MoodDisplay(
+                      mood: entry.mood!,
+                      size: 16,
+                      showLabel: false,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               if (entry.description.isNotEmpty) ...[
                 const SizedBox(height: 4),

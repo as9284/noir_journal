@@ -162,6 +162,10 @@ class SettingsController extends ChangeNotifier {
       _biometricEnabled = false;
       globalAppLockNotifier.value = false;
       notifyListeners();
+      // Fix: After disabling AppLock, navigate to home to avoid blank screen
+      if (context.mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
       return true;
     }
     return false;
@@ -252,6 +256,12 @@ class SettingsController extends ChangeNotifier {
     try {
       if (!context.mounted) return;
 
+      // Check app lock before allowing export
+      if (globalAppLockNotifier.value) {
+        final canProceed = await AppLockManager.checkAndUnlock(context);
+        if (!canProceed || !context.mounted) return;
+      }
+
       DataOperationDialogs.showLoadingDialog(
         context,
         'Preparing encrypted export...',
@@ -297,6 +307,12 @@ class SettingsController extends ChangeNotifier {
   }
 
   Future<void> importData(BuildContext context) async {
+    // Check app lock before allowing import
+    if (globalAppLockNotifier.value) {
+      final canProceed = await AppLockManager.checkAndUnlock(context);
+      if (!canProceed || !context.mounted) return;
+    }
+
     final confirmed = await DataOperationDialogs.showImportConfirmation(
       context,
     );
@@ -389,6 +405,69 @@ class SettingsController extends ChangeNotifier {
         success: false,
         title: 'Import Error',
         message: 'An unexpected error occurred: ${e.toString()}',
+      );
+    }
+  }
+
+  Future<void> deleteAllData(BuildContext context) async {
+    try {
+      if (!context.mounted) return;
+
+      // Show loading dialog
+      DataOperationDialogs.showLoadingDialog(context, 'Deleting all data...');
+
+      // Clear all shared preferences data related to diary entries
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('diary_entries');
+
+      // Reset app settings to defaults (keep theme preferences but clear data)
+      await prefs.remove('has_password');
+      await prefs.remove('password_hash');
+      await prefs.remove('salt');
+      await prefs.remove('biometric_enabled');
+      await prefs.remove('lock_enabled');
+
+      // Clear any other app-specific data
+      final keys =
+          prefs
+              .getKeys()
+              .where(
+                (key) =>
+                    key.startsWith('diary_') ||
+                    key.startsWith('entry_') ||
+                    key.startsWith('journal_'),
+              )
+              .toList();
+
+      for (String key in keys) {
+        await prefs.remove(key);
+      }
+      if (!context.mounted) return;
+
+      // Hide loading dialog
+      DataOperationDialogs.hideLoadingDialog(context);
+
+      // Trigger global data refresh immediately after clearing data
+      // This ensures the home screen starts refreshing before we show the success dialog
+      globalDataRefreshNotifier.value++;
+
+      // Show success dialog
+      await DataOperationDialogs.showResultDialog(
+        context,
+        success: true,
+        title: 'Data Deleted',
+        message: 'All your journal data has been permanently deleted.',
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      DataOperationDialogs.hideLoadingDialog(context);
+
+      await DataOperationDialogs.showResultDialog(
+        context,
+        success: false,
+        title: 'Delete Failed',
+        message: 'Failed to delete data: ${e.toString()}',
       );
     }
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
 import 'package:noir_journal/constants/diary_icons.dart';
+import 'package:noir_journal/models/mood.dart';
+import 'package:noir_journal/widgets/mood_selector.dart';
 
 class CreateEntryPage extends StatefulWidget {
   const CreateEntryPage({super.key});
@@ -16,6 +18,7 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
   final _descriptionFocusNode = FocusNode();
 
   int _selectedIconIndex = 0;
+  Mood? _selectedMood;
   bool _canSave = false;
 
   @override
@@ -50,6 +53,7 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
       description: _descriptionController.text.trim(),
       createdAt: DateTime.now(),
       iconIndex: _selectedIconIndex,
+      mood: _selectedMood,
     );
 
     Navigator.pop(context, entry);
@@ -92,6 +96,8 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
             _buildTitleSection(theme),
             const SizedBox(height: 20),
             _buildDescriptionSection(theme),
+            const SizedBox(height: 20),
+            _buildMoodSection(theme),
             const SizedBox(height: 20),
             _buildIconSection(theme),
           ],
@@ -260,6 +266,56 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
             ),
             style: theme.textTheme.bodyMedium,
             textCapitalization: TextCapitalization.sentences,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMoodSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.mood, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Mood',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: theme.shadowColor.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(
+              color: theme.dividerColor.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: MoodSelector(
+            selectedMood: _selectedMood,
+            onMoodChanged: (mood) {
+              setState(() {
+                _selectedMood = mood;
+              });
+            },
+            title: 'How are you feeling today?',
           ),
         ),
       ],

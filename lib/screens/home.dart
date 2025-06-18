@@ -67,29 +67,50 @@ class _HomePageState extends State<HomePage> {
 
   void _onDataRefresh() {
     if (mounted) {
+      // Force a rebuild by updating the state even if entries are empty
+      setState(() {
+        // Clear current entries first to ensure proper state reset
+        _entries.clear();
+        _selectedEntries.clear();
+        _searchQuery = '';
+        _searchDate = null;
+      });
+      // Then load entries
       _loadEntries();
     }
   }
 
   Future<void> _loadEntries() async {
-    final prefs = await SharedPreferences.getInstance();
-    final entriesJson = prefs.getStringList('diary_entries') ?? [];
-    setState(() {
-      _entries =
-          entriesJson.map((e) {
-            try {
-              final decoded = jsonDecode(e);
-              if (decoded is Map<String, dynamic>) {
-                return DiaryEntry.fromJson(decoded);
-              }
-            } catch (_) {}
-            return DiaryEntry(
-              title: e,
-              createdAt: DateTime.now(),
-              iconIndex: 0,
-            );
-          }).toList();
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final entriesJson = prefs.getStringList('diary_entries') ?? [];
+
+      final loadedEntries = <DiaryEntry>[];
+      for (final entryString in entriesJson) {
+        try {
+          final decoded = jsonDecode(entryString);
+          if (decoded is Map<String, dynamic>) {
+            loadedEntries.add(DiaryEntry.fromJson(decoded));
+          }
+        } catch (e) {
+          // Skip invalid entries
+          debugPrint('Skipping invalid entry: $e');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _entries = loadedEntries;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading entries: $e');
+      if (mounted) {
+        setState(() {
+          _entries = [];
+        });
+      }
+    }
   }
 
   Future<void> _saveEntries() async {

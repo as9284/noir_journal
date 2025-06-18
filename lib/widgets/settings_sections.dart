@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/settings_widgets.dart';
 import '../theme/app_theme.dart';
+import '../lock/app_lock_manager.dart';
+import '../main.dart';
 
 class SettingsSections {
   static Widget buildAppearanceSection(
@@ -49,7 +51,11 @@ class SettingsSections {
     BuildContext context,
     SettingsController controller,
     ValueNotifier<ThemeData> themeNotifier,
-  ) {
+  ) async {
+    // Check app lock before showing dialog
+    final canProceed = await _checkAppLockBeforeAction(context);
+    if (!canProceed || !context.mounted) return;
+
     showDialog(
       context: context,
       builder:
@@ -201,6 +207,14 @@ class SettingsSections {
               icon: Icons.file_upload,
               onTap: () => controller.importData(context),
             ),
+            SettingsWidgets.buildDivider(theme),
+            SettingsWidgets.buildModernTile(
+              theme,
+              title: 'Delete All Data',
+              subtitle: 'Permanently remove all journal entries',
+              icon: Icons.delete_forever,
+              onTap: () => _showDeleteAllDataDialog(context, controller),
+            ),
           ],
         ),
       ],
@@ -263,6 +277,165 @@ class SettingsSections {
           ],
         ),
       ],
+    );
+  }
+
+  static void _showDeleteAllDataDialog(
+    BuildContext context,
+    SettingsController controller,
+  ) async {
+    // Check app lock before showing sensitive dialog
+    final canProceed = await _checkAppLockBeforeAction(context);
+    if (!canProceed || !context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => _DeleteAllDataDialog(controller: controller),
+    );
+  }
+
+  /// Helper function to check app lock before executing sensitive operations
+  static Future<bool> _checkAppLockBeforeAction(BuildContext context) async {
+    if (!globalAppLockNotifier.value) {
+      return true; // No lock enabled, proceed
+    }
+
+    return await AppLockManager.checkAndUnlock(context);
+  }
+}
+
+class _DeleteAllDataDialog extends StatefulWidget {
+  final SettingsController controller;
+
+  const _DeleteAllDataDialog({required this.controller});
+
+  @override
+  State<_DeleteAllDataDialog> createState() => _DeleteAllDataDialogState();
+}
+
+class _DeleteAllDataDialogState extends State<_DeleteAllDataDialog> {
+  late TextEditingController _confirmationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confirmationController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _confirmationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Icon(Icons.warning, color: theme.colorScheme.error, size: 24),
+          const SizedBox(width: 12),
+          const Text('Delete All Data'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'This action will permanently delete all your journal entries and cannot be undone.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'To confirm, type "Delete my data" below:',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _confirmationController,
+            onChanged: (value) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Delete my data',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        const SizedBox(width: 8),
+        FilledButton(
+          onPressed:
+              _confirmationController.text.trim() == 'Delete my data'
+                  ? () {
+                    Navigator.of(context).pop();
+                    _showFinalDeleteConfirmation(context, widget.controller);
+                  }
+                  : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: theme.colorScheme.error,
+            foregroundColor: theme.colorScheme.onError,
+          ),
+          child: const Text('Delete'),
+        ),
+      ],
+    );
+  }
+
+  void _showFinalDeleteConfirmation(
+    BuildContext context,
+    SettingsController controller,
+  ) {
+    final theme = Theme.of(context);
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'Final Confirmation',
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+            content: const Text(
+              'Are you absolutely sure you want to delete all your data? This cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  controller.deleteAllData(context);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.error,
+                  foregroundColor: theme.colorScheme.onError,
+                ),
+                child: const Text('Delete Everything'),
+              ),
+            ],
+          ),
     );
   }
 }

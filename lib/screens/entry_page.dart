@@ -4,6 +4,8 @@ import 'package:noir_journal/models/diary_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/diary_icons.dart';
 import '../utils/dialog_utils.dart';
+import '../models/mood.dart';
+import '../widgets/mood_selector.dart';
 
 class EntryPage extends StatefulWidget {
   final DiaryEntry entry;
@@ -18,9 +20,9 @@ class _EntryPageState extends State<EntryPage> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late int _selectedIconIndex;
+  late Mood? _selectedMood;
   bool _isEditing = false;
   bool _hasChanges = false;
-
   @override
   void initState() {
     super.initState();
@@ -29,6 +31,7 @@ class _EntryPageState extends State<EntryPage> {
       text: widget.entry.description,
     );
     _selectedIconIndex = widget.entry.iconIndex;
+    _selectedMood = widget.entry.mood;
 
     _titleController.addListener(_onTextChanged);
     _descriptionController.addListener(_onTextChanged);
@@ -45,7 +48,8 @@ class _EntryPageState extends State<EntryPage> {
     final hasChanges =
         _titleController.text != widget.entry.title ||
         _descriptionController.text != widget.entry.description ||
-        _selectedIconIndex != widget.entry.iconIndex;
+        _selectedIconIndex != widget.entry.iconIndex ||
+        _selectedMood != widget.entry.mood;
 
     if (_hasChanges != hasChanges) {
       setState(() {
@@ -77,12 +81,12 @@ class _EntryPageState extends State<EntryPage> {
       ).showSnackBar(const SnackBar(content: Text('Title cannot be empty')));
       return;
     }
-
     final updatedEntry = DiaryEntry(
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       createdAt: widget.entry.createdAt,
       iconIndex: _selectedIconIndex,
+      mood: _selectedMood,
     );
 
     widget.onUpdate?.call(updatedEntry);
@@ -92,6 +96,8 @@ class _EntryPageState extends State<EntryPage> {
       _isEditing = false;
       _hasChanges = false;
     });
+    if (!mounted) return;
+    Navigator.of(context).pop(updatedEntry);
   }
 
   Future<void> _saveToPreferences(DiaryEntry updatedEntry) async {
@@ -197,6 +203,8 @@ class _EntryPageState extends State<EntryPage> {
             _buildTitleSection(theme),
             const SizedBox(height: 20),
             _buildDescriptionSection(theme),
+            const SizedBox(height: 20),
+            if (_isEditing) _buildMoodSection(theme),
             const SizedBox(height: 20),
             if (_isEditing) _buildIconSection(theme),
             if (!_isEditing) _buildMetadataSection(theme),
@@ -528,6 +536,50 @@ class _EntryPageState extends State<EntryPage> {
     );
   }
 
+  Widget _buildMoodSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.mood, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Mood',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: theme.colorScheme.primary.withAlpha(77),
+              width: 1,
+            ),
+          ),
+          child: MoodSelector(
+            selectedMood: _selectedMood,
+            onMoodChanged: (mood) {
+              setState(() {
+                _selectedMood = mood;
+                _onTextChanged(); // Trigger change detection
+              });
+            },
+            title: 'How were you feeling?',
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMetadataSection(ThemeData theme) {
     return Container(
       width: double.infinity,
@@ -564,6 +616,28 @@ class _EntryPageState extends State<EntryPage> {
               color: theme.colorScheme.onSurface.withAlpha(179),
             ),
           ),
+          if (widget.entry.mood != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  'Mood: ',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withAlpha(179),
+                  ),
+                ),
+                MoodDisplay(
+                  mood: widget.entry.mood!,
+                  size: 14,
+                  showLabel: true,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
