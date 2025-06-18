@@ -92,7 +92,6 @@ class _HomePageState extends State<HomePage> {
                 SettingsPage(themeModeNotifier: globalThemeModeNotifier!),
       ),
     );
-    // Refresh entries when returning from settings (in case data was imported)
     await _loadEntries();
   }
 
@@ -183,9 +182,7 @@ class _HomePageState extends State<HomePage> {
       ),
       appBar: AppBar(
         title: Text(
-          _isSelecting
-              ? '${_selectedEntries.length} selected'
-              : 'Your Journal',
+          _isSelecting ? '${_selectedEntries.length} selected' : 'Your Journal',
         ),
         titleSpacing: 0,
         centerTitle: !(_searchQuery.isNotEmpty || _searchDate != null),
