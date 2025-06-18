@@ -70,7 +70,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 20),
 
-                SettingsSections.buildDataManagementSection(context, theme),
+                SettingsSections.buildDataManagementSection(
+                  context,
+                  theme,
+                  _controller,
+                ),
                 const SizedBox(height: 20),
 
                 SettingsSections.buildAboutSection(context, theme, _controller),

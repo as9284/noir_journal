@@ -92,6 +92,8 @@ class _HomePageState extends State<HomePage> {
                 SettingsPage(themeModeNotifier: globalThemeModeNotifier!),
       ),
     );
+    // Refresh entries when returning from settings (in case data was imported)
+    await _loadEntries();
   }
 
   Future<void> _onAddEntryPressed(BuildContext _) async {

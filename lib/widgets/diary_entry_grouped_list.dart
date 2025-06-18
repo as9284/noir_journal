@@ -59,12 +59,15 @@ class DiaryEntryGroupedList extends StatelessWidget {
           // Entries
           for (final entry in grouped[dateKey]!) {
             if (index == runningIndex) {
-              return DiaryEntryCard(
-                entry: entry,
-                onTap: () => onTap(entry),
-                onLongPress:
-                    onLongPress != null ? () => onLongPress!(entry) : null,
-                selected: selectedEntries?.contains(entry) ?? false,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: DiaryEntryCard(
+                  entry: entry,
+                  onTap: () => onTap(entry),
+                  onLongPress:
+                      onLongPress != null ? () => onLongPress!(entry) : null,
+                  selected: selectedEntries?.contains(entry) ?? false,
+                ),
               );
             }
             runningIndex++;

@@ -95,6 +95,7 @@ class SettingsSections {
   static Widget buildDataManagementSection(
     BuildContext context,
     ThemeData theme,
+    SettingsController controller,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,17 +111,17 @@ class SettingsSections {
             SettingsWidgets.buildModernTile(
               theme,
               title: 'Export Data',
-              subtitle: 'Export your journal entries',
+              subtitle: 'Share your journal entries as backup file',
               icon: Icons.file_download,
-              onTap: () {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Export feature coming soon!'),
-                    ),
-                  );
-                }
-              },
+              onTap: () => controller.exportData(context),
+            ),
+            SettingsWidgets.buildDivider(theme),
+            SettingsWidgets.buildModernTile(
+              theme,
+              title: 'Import Data',
+              subtitle: 'Restore journal entries from backup file',
+              icon: Icons.file_upload,
+              onTap: () => controller.importData(context),
             ),
           ],
         ),

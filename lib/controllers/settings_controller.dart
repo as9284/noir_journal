@@ -6,8 +6,11 @@ import '../lock/app_lock_manager.dart';
 import '../utils/app_lock_service.dart';
 import '../utils/settings_prefs.dart';
 import '../utils/restart_widget.dart';
+import '../utils/data_operation_dialogs.dart';
+import '../utils/password_dialog.dart';
 import '../main.dart';
 import '../widgets/pin_lock_screen.dart';
+import '../services/data_export_import_service.dart';
 
 class SettingsController extends ChangeNotifier {
   bool _isDarkTheme = false;
@@ -189,5 +192,129 @@ class SettingsController extends ChangeNotifier {
             ],
           ),
     );
+  }
+
+  Future<void> exportData(BuildContext context) async {
+    try {
+      DataOperationDialogs.showLoadingDialog(
+        context,
+        'Preparing encrypted export...',
+      );
+
+      final result = await DataExportImportService.exportData();
+
+      if (context.mounted) {
+        DataOperationDialogs.hideLoadingDialog(context);
+
+        if (result.success && result.exportPassword != null) {
+          // Show password dialog first
+          await PasswordInputDialog.showPasswordCopyDialog(
+            context,
+            result.exportPassword!,
+          );
+        }
+
+        await DataOperationDialogs.showResultDialog(
+          context,
+          success: result.success,
+          title: result.success ? 'Export Successful' : 'Export Failed',
+          message:
+              result.success
+                  ? 'Your journal has been exported with encryption. The backup file has been saved to your Downloads folder.'
+                  : result.message,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        DataOperationDialogs.hideLoadingDialog(context);
+
+        await DataOperationDialogs.showResultDialog(
+          context,
+          success: false,
+          title: 'Export Error',
+          message: 'An unexpected error occurred: ${e.toString()}',
+        );
+      }
+    }
+  }
+
+  Future<void> importData(BuildContext context) async {
+    final confirmed = await DataOperationDialogs.showImportConfirmation(
+      context,
+    );
+    if (!confirmed) return;
+
+    try {
+      DataOperationDialogs.showLoadingDialog(context, 'Reading backup file...');
+
+      final fileCheck = await DataExportImportService.checkBackupFile();
+
+      if (context.mounted) {
+        DataOperationDialogs.hideLoadingDialog(context);
+
+        if (!fileCheck.success) {
+          await DataOperationDialogs.showResultDialog(
+            context,
+            success: false,
+            title: 'File Selection Error',
+            message: fileCheck.message,
+          );
+          return;
+        }
+
+        ImportResult result;
+
+        if (fileCheck.isEncrypted) {
+          final password = await PasswordInputDialog.showPasswordDialog(
+            context,
+            title: 'Enter Backup Password',
+            message:
+                'This backup is encrypted. Please enter the password you received when you created this backup.',
+          );
+
+          if (password != null && context.mounted) {
+            DataOperationDialogs.showLoadingDialog(
+              context,
+              'Decrypting and importing...',
+            );
+            result = await DataExportImportService.importFromCheckedFile(
+              fileCheck,
+              password,
+            );
+            if (context.mounted) {
+              DataOperationDialogs.hideLoadingDialog(context);
+            }
+          } else {
+            return;
+          }
+        } else {
+          DataOperationDialogs.showLoadingDialog(context, 'Importing...');
+          result = await DataExportImportService.importFromCheckedFile(
+            fileCheck,
+          );
+          if (context.mounted) {
+            DataOperationDialogs.hideLoadingDialog(context);
+          }
+        }
+
+        await DataOperationDialogs.showResultDialog(
+          context,
+          success: result.success,
+          title: result.success ? 'Import Successful' : 'Import Failed',
+          message: result.message,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        DataOperationDialogs.hideLoadingDialog(context);
+
+        await DataOperationDialogs.showResultDialog(
+          context,
+          success: false,
+          title: 'Import Error',
+          message: 'An unexpected error occurred: ${e.toString()}',
+        );
+      }
+    }
   }
 }
