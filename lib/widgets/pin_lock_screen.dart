@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:io';
 import 'pin_key_button.dart';
 import 'pin_backspace_button.dart';
 import 'package:local_auth/local_auth.dart';
+import '../utils/app_lock_service.dart';
 
 class PinLockScreen extends StatefulWidget {
   final Future<bool> Function(String pin)? onVerify;
@@ -29,16 +32,20 @@ class _PinLockScreenState extends State<PinLockScreen> {
   bool _isLoading = false;
   String? _firstPin;
   bool _biometricAttempted = false;
+  bool _isInLockdown = false;
+  int _lockdownSeconds = 0;
+  Timer? _lockdownTimer;
   final LocalAuthentication _localAuth = LocalAuthentication();
-
   @override
   void initState() {
     super.initState();
     _biometricAttempted = false;
+    _checkLockdownStatus();
+
     if (widget.allowBiometric && !widget.registerMode) {
       _isLoading = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_biometricAttempted) {
+        if (mounted && !_biometricAttempted && !_isInLockdown) {
           _biometricAttempted = true;
           _handleBiometric();
         }
@@ -46,20 +53,75 @@ class _PinLockScreenState extends State<PinLockScreen> {
     }
   }
 
+  Future<void> _checkLockdownStatus() async {
+    if (!widget.registerMode) {
+      final inLockdown = await AppLockService.isInLockdown();
+      final seconds = await AppLockService.getLockdownRemainingSeconds();
+
+      if (mounted) {
+        setState(() {
+          _isInLockdown = inLockdown;
+          _lockdownSeconds = seconds;
+          if (inLockdown) {
+            _error =
+                'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
+            _startLockdownTimer();
+          }
+        });
+      }
+    }
+  }
+
+  void _startLockdownTimer() {
+    _lockdownTimer?.cancel();
+    if (_lockdownSeconds > 0) {
+      _lockdownTimer = Timer.periodic(const Duration(seconds: 1), (
+        timer,
+      ) async {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        final stillInLockdown = await AppLockService.isInLockdown();
+        final remainingSeconds =
+            await AppLockService.getLockdownRemainingSeconds();
+
+        setState(() {
+          _isInLockdown = stillInLockdown;
+          _lockdownSeconds = remainingSeconds;
+
+          if (stillInLockdown && remainingSeconds > 0) {
+            _error =
+                'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
+          } else if (remainingSeconds <= 0) {
+            // Close the app when lockdown timer reaches 0
+            timer.cancel();
+            _lockdownTimer = null;
+            exit(0);
+          } else {
+            _error = null;
+            timer.cancel();
+            _lockdownTimer = null;
+          }
+        });
+      });
+    }
+  }
+
   void _onKeyTap(String value) {
-    if (_pin.length < 4 && !_isLoading) {
+    if (_pin.length < 6 && !_isLoading && !_isInLockdown) {
       setState(() {
         _pin += value;
         _error = null;
       });
-      if (_pin.length == 4) {
+      if (_pin.length == 6) {
         _submit();
       }
     }
   }
 
   void _onBackspace() {
-    if (_pin.isNotEmpty && !_isLoading) {
+    if (_pin.isNotEmpty && !_isLoading && !_isInLockdown) {
       setState(() {
         _pin = _pin.substring(0, _pin.length - 1);
         _error = null;
@@ -69,6 +131,15 @@ class _PinLockScreenState extends State<PinLockScreen> {
 
   Future<void> _handleBiometric() async {
     if (!mounted) return;
+
+    // Check if in lockdown before attempting biometric auth
+    if (_isInLockdown) {
+      setState(() {
+        _error =
+            'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
+      });
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -96,6 +167,8 @@ class _PinLockScreenState extends State<PinLockScreen> {
         ),
       );
       if (didAuthenticate && mounted) {
+        // Reset failed attempts on successful biometric verification
+        await AppLockService.resetFailedAttempts();
         await _animateAndPop();
       }
     } catch (e) {
@@ -142,17 +215,44 @@ class _PinLockScreenState extends State<PinLockScreen> {
         _isLoading = true;
         _error = null;
       });
-      final valid = await widget.onVerify!(_pin);
-      setState(() => _isLoading = false);
 
+      final valid = await widget.onVerify!(_pin);
       if (valid) {
+        // Reset failed attempts on successful verification
+        await AppLockService.resetFailedAttempts();
         if (!mounted) return;
         await _animateAndPop();
       } else {
-        setState(() {
-          _error = 'Incorrect PIN';
-          _pin = '';
-        });
+        // Don't show loading state for failed attempts to prevent flashing
+        // Increment failed attempts
+        await AppLockService.incrementFailedAttempts(); // Get all the updated state in parallel
+        final futures = await Future.wait([
+          AppLockService.isInLockdown(),
+          AppLockService.getLockdownRemainingSeconds(),
+          AppLockService.getFailedAttempts(),
+        ]);
+
+        final inLockdown = futures[0] as bool;
+        final seconds = futures[1] as int;
+        final currentAttempts = futures[2] as int;
+        final remaining =
+            AppLockService.maxAttemptsBeforeLockdown - currentAttempts;
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _isInLockdown = inLockdown;
+            _lockdownSeconds = seconds;
+
+            if (inLockdown) {
+              _error =
+                  'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
+              _startLockdownTimer();
+            } else {
+              _error = 'Incorrect PIN. $remaining attempts remaining.';
+            }
+            _pin = '';
+          });
+        }
       }
     }
   }
@@ -160,7 +260,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
   Widget _buildPinDots() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(4, (i) {
+      children: List.generate(6, (i) {
         final filled = i < _pin.length;
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -257,7 +357,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
                   Text(
                     isRegister
                         ? (_firstPin == null
-                            ? 'Enter a new 4-digit PIN'
+                            ? 'Enter a new 6-digit PIN'
                             : 'Confirm your new PIN')
                         : 'Enter your PIN',
                     style: Theme.of(context).textTheme.titleLarge,
@@ -266,7 +366,16 @@ class _PinLockScreenState extends State<PinLockScreen> {
                   _buildPinDots(),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -274,6 +383,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
               if (!_isLoading &&
                   widget.allowBiometric &&
                   !widget.registerMode &&
+                  !_isInLockdown &&
                   _biometricAttempted) ...[
                 ElevatedButton.icon(
                   icon: const Icon(Icons.fingerprint, size: 32),
@@ -298,5 +408,11 @@ class _PinLockScreenState extends State<PinLockScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _lockdownTimer?.cancel();
+    super.dispose();
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 final entryCardLightColor = const Color(0xFFF8F8F8);
 final entryCardDarkColor = const Color(0xFF23232A).withAlpha(235);
@@ -15,6 +16,11 @@ final ThemeData lightTheme = ThemeData(
       color: Colors.black,
       fontSize: 20,
       fontWeight: FontWeight.bold,
+    ),
+    systemOverlayStyle: SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
     ),
   ),
   textTheme: const TextTheme(
@@ -80,6 +86,11 @@ final ThemeData darkTheme = ThemeData(
       color: Colors.white,
       fontSize: 20,
       fontWeight: FontWeight.bold,
+    ),
+    systemOverlayStyle: SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
     ),
   ),
   textTheme: const TextTheme(
