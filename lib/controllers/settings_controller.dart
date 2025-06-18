@@ -11,6 +11,7 @@ import '../utils/dialog_utils.dart';
 import '../main.dart';
 import '../widgets/pin_lock_screen.dart';
 import '../services/data_export_import_service.dart';
+import '../theme/app_theme.dart';
 
 class SettingsController extends ChangeNotifier {
   bool _isDarkTheme = false;
@@ -18,12 +19,14 @@ class SettingsController extends ChangeNotifier {
   bool _lockEnabled = false;
   bool _biometricEnabled = false;
   bool _isLoading = true;
+  AppColorTheme _selectedColorTheme = AppColorTheme.noir;
 
   bool get isDarkTheme => _isDarkTheme;
   String get version => _version;
   bool get lockEnabled => _lockEnabled;
   bool get biometricEnabled => _biometricEnabled;
   bool get isLoading => _isLoading;
+  AppColorTheme get selectedColorTheme => _selectedColorTheme;
 
   Future<void> initialize() async {
     await _loadAllSettings();
@@ -36,11 +39,25 @@ class SettingsController extends ChangeNotifier {
       final isDark = prefs.getBool('isDarkTheme') ?? false;
       final lockEnabled = await AppLockService.isLockEnabled();
       final biometricEnabled = await AppLockService.isBiometricEnabled();
+      final colorThemeString = prefs.getString('selectedColorTheme') ?? 'noir';
+
+      // Parse the saved color theme
+      AppColorTheme selectedTheme = AppColorTheme.noir;
+      try {
+        selectedTheme = AppColorTheme.values.firstWhere(
+          (theme) => theme.name == colorThemeString,
+          orElse: () => AppColorTheme.noir,
+        );
+      } catch (e) {
+        // If parsing fails, use default
+        selectedTheme = AppColorTheme.noir;
+      }
 
       _version = packageInfo.version;
       _isDarkTheme = isDark;
       _lockEnabled = lockEnabled;
       _biometricEnabled = biometricEnabled;
+      _selectedColorTheme = selectedTheme;
       _isLoading = false;
 
       notifyListeners();
@@ -52,14 +69,36 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> toggleDarkTheme(
     bool value,
-    ValueNotifier<ThemeMode> themeModeNotifier,
+    ValueNotifier<ThemeData> themeNotifier,
   ) async {
     _isDarkTheme = value;
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isDarkTheme', value);
-    themeModeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+
+    // Update the theme with the current color theme
+    themeNotifier.value = getThemeData(
+      colorTheme: _selectedColorTheme,
+      isDark: value,
+    );
+  }
+
+  Future<void> changeColorTheme(
+    AppColorTheme colorTheme,
+    ValueNotifier<ThemeData> themeNotifier,
+  ) async {
+    _selectedColorTheme = colorTheme;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedColorTheme', colorTheme.name);
+
+    // Update the theme with the new color theme
+    themeNotifier.value = getThemeData(
+      colorTheme: colorTheme,
+      isDark: _isDarkTheme,
+    );
   }
 
   Future<bool> enableAppLock(BuildContext context) async {

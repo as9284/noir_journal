@@ -4,9 +4,9 @@ import '../widgets/settings_widgets.dart';
 import '../widgets/settings_sections.dart';
 
 class SettingsPage extends StatefulWidget {
-  final ValueNotifier<ThemeMode> themeModeNotifier;
+  final ValueNotifier<ThemeData> themeNotifier;
 
-  const SettingsPage({super.key, required this.themeModeNotifier});
+  const SettingsPage({super.key, required this.themeNotifier});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -55,11 +55,11 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 SettingsWidgets.buildProfileSection(theme),
                 const SizedBox(height: 24),
-
                 SettingsSections.buildAppearanceSection(
+                  context,
                   theme,
                   _controller,
-                  widget.themeModeNotifier,
+                  widget.themeNotifier,
                 ),
                 const SizedBox(height: 20),
 

@@ -102,9 +102,7 @@ class _HomePageState extends State<HomePage> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) =>
-                SettingsPage(themeModeNotifier: globalThemeModeNotifier!),
+        builder: (context) => SettingsPage(themeNotifier: globalThemeNotifier!),
       ),
     );
     // Always reload entries when returning from settings

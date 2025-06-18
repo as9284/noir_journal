@@ -10,7 +10,7 @@ import 'utils/restart_widget.dart';
 import 'lock/lock_wrapper.dart';
 import 'utils/app_lock_service.dart';
 
-ValueNotifier<ThemeMode>? globalThemeModeNotifier;
+ValueNotifier<ThemeData>? globalThemeNotifier;
 ValueNotifier<bool> globalAppLockNotifier = ValueNotifier(false);
 ValueNotifier<int> globalDataRefreshNotifier = ValueNotifier(0);
 
@@ -18,14 +18,28 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await lockPortraitMode();
   await initializeAppLockNotifier();
+
+  // Initialize theme based on saved preferences
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('isDarkTheme') ?? false;
-  globalThemeModeNotifier = ValueNotifier(
-    isDark ? ThemeMode.dark : ThemeMode.light,
+  final colorThemeString = prefs.getString('selectedColorTheme') ?? 'noir';
+
+  // Parse the saved color theme
+  AppColorTheme selectedTheme = AppColorTheme.noir;
+  try {
+    selectedTheme = AppColorTheme.values.firstWhere(
+      (theme) => theme.name == colorThemeString,
+      orElse: () => AppColorTheme.noir,
+    );
+  } catch (e) {
+    selectedTheme = AppColorTheme.noir;
+  }
+
+  globalThemeNotifier = ValueNotifier(
+    getThemeData(colorTheme: selectedTheme, isDark: isDark),
   );
-  runApp(
-    RestartWidget(child: MainApp(themeModeNotifier: globalThemeModeNotifier!)),
-  );
+
+  runApp(RestartWidget(child: MainApp(themeNotifier: globalThemeNotifier!)));
 }
 
 Future<void> initializeAppLockNotifier() async {
@@ -34,8 +48,8 @@ Future<void> initializeAppLockNotifier() async {
 }
 
 class MainApp extends StatelessWidget {
-  final ValueNotifier<ThemeMode> themeModeNotifier;
-  const MainApp({super.key, required this.themeModeNotifier});
+  final ValueNotifier<ThemeData> themeNotifier;
+  const MainApp({super.key, required this.themeNotifier});
 
   Future<bool> _shouldShowIntro() async {
     final prefs = await SharedPreferences.getInstance();
@@ -44,9 +58,9 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeModeNotifier,
-      builder: (context, themeMode, _) {
+    return ValueListenableBuilder<ThemeData>(
+      valueListenable: themeNotifier,
+      builder: (context, theme, _) {
         return FutureBuilder<bool>(
           future: _shouldShowIntro(),
           builder: (context, snapshot) {
@@ -54,18 +68,15 @@ class MainApp extends StatelessWidget {
 
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-              theme: lightTheme,
-              darkTheme: darkTheme,
-              themeMode: themeMode,
+              theme: theme,
               home: LockWrapper(
                 child: showIntro ? const IntroScreen() : const HomePage(),
               ),
               routes: {
                 '/home': (context) => const HomePage(),
                 '/settings':
-                    (context) => SettingsPage(
-                      themeModeNotifier: globalThemeModeNotifier!,
-                    ),
+                    (context) =>
+                        SettingsPage(themeNotifier: globalThemeNotifier!),
               },
             );
           },

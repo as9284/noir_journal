@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/settings_widgets.dart';
+import '../theme/app_theme.dart';
 
 class SettingsSections {
   static Widget buildAppearanceSection(
+    BuildContext context,
     ThemeData theme,
     SettingsController controller,
-    ValueNotifier<ThemeMode> themeModeNotifier,
+    ValueNotifier<ThemeData> themeNotifier,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,14 +25,90 @@ class SettingsSections {
               trailing: Switch.adaptive(
                 value: controller.isDarkTheme,
                 onChanged:
-                    (value) =>
-                        controller.toggleDarkTheme(value, themeModeNotifier),
+                    (value) => controller.toggleDarkTheme(value, themeNotifier),
                 activeColor: theme.colorScheme.primary,
               ),
+            ),
+            SettingsWidgets.buildDivider(theme),
+            SettingsWidgets.buildModernTile(
+              theme,
+              title: 'Color Theme',
+              subtitle: colorThemes[controller.selectedColorTheme]!.name,
+              icon: Icons.color_lens,
+              onTap:
+                  () =>
+                      _showColorThemeDialog(context, controller, themeNotifier),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  static void _showColorThemeDialog(
+    BuildContext context,
+    SettingsController controller,
+    ValueNotifier<ThemeData> themeNotifier,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Choose Color Theme'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: AppColorTheme.values.length,
+                itemBuilder: (context, index) {
+                  final colorTheme = AppColorTheme.values[index];
+                  final colorData = colorThemes[colorTheme]!;
+                  final isSelected =
+                      controller.selectedColorTheme == colorTheme;
+
+                  return ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color:
+                            controller.isDarkTheme
+                                ? colorData.darkPrimary
+                                : colorData.lightPrimary,
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            isSelected
+                                ? Border.all(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 3,
+                                )
+                                : null,
+                      ),
+                      child:
+                          isSelected
+                              ? Icon(
+                                Icons.check,
+                                color: colorData.lightSecondary,
+                                size: 20,
+                              )
+                              : null,
+                    ),
+                    title: Text(colorData.name),
+                    onTap: () {
+                      controller.changeColorTheme(colorTheme, themeNotifier);
+                      Navigator.of(context).pop();
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
     );
   }
 

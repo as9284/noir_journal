@@ -17,99 +17,87 @@ class AppDrawer extends StatelessWidget {
     required this.onSettings,
     required this.version,
   });
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Drawer(
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(32),
           bottomRight: Radius.circular(32),
         ),
       ),
-      child: Container(
-        color:
-            Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF232526)
-                : Colors.white,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 48),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 8,
-              ),
-              child: Text(
-                'Noir Journal',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  color:
-                      Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black,
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 48),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
+            child: Text(
+              'Noir Journal',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 12),
-            _DrawerTile(
-              icon: Icons.search,
-              label: 'Search by Title',
-              onTap: () async {
-                Navigator.pop(context);
-                final query = await showSearch<String?>(
-                  context: context,
-                  delegate: DiaryEntrySearchDelegate(entries),
-                );
-                if (query != null) {
-                  onSearchTitle(query);
-                }
-              },
-            ),
-            _DrawerTile(
-              icon: Icons.calendar_today,
-              label: 'Search by Date',
-              onTap: () async {
-                Navigator.pop(context);
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                  helpText: 'Search entries by date',
-                );
-                if (picked != null) {
-                  onSearchDate(picked);
-                }
-              },
-            ),
-            _DrawerTile(
-              icon: Icons.settings,
-              label: 'Settings',
-              onTap: () {
-                Navigator.pop(context);
-                onSettings();
-              },
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.only(left: 24, bottom: 16, top: 8),
-              child: Text(
-                version,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color:
-                      Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white70
-                          : Colors.black54,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.5,
-                ),
+          ),
+          const SizedBox(height: 12),
+          _DrawerTile(
+            icon: Icons.search,
+            label: 'Search by Title',
+            onTap: () async {
+              Navigator.pop(context);
+              final query = await showSearch<String?>(
+                context: context,
+                delegate: DiaryEntrySearchDelegate(entries),
+              );
+              if (query != null) {
+                onSearchTitle(query);
+              }
+            },
+          ),
+          _DrawerTile(
+            icon: Icons.calendar_today,
+            label: 'Search by Date',
+            onTap: () async {
+              Navigator.pop(context);
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+                helpText: 'Search entries by date',
+              );
+              if (picked != null) {
+                onSearchDate(picked);
+              }
+            },
+          ),
+          _DrawerTile(
+            icon: Icons.settings,
+            label: 'Settings',
+            onTap: () {
+              Navigator.pop(context);
+              onSettings();
+            },
+          ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.only(left: 24, bottom: 16, top: 8),
+            child: Text(
+              version,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -125,10 +113,9 @@ class _DrawerTile extends StatelessWidget {
     required this.label,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
       child: Material(
@@ -143,24 +130,17 @@ class _DrawerTile extends StatelessWidget {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color:
-                        isDark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.black.withValues(alpha: 0.08),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   padding: const EdgeInsets.all(10),
-                  child: Icon(
-                    icon,
-                    color: isDark ? Colors.white : Colors.black87,
-                    size: 22,
-                  ),
+                  child: Icon(icon, color: theme.colorScheme.primary, size: 22),
                 ),
                 const SizedBox(width: 18),
                 Text(
                   label,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: isDark ? Colors.white : Colors.black,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
