@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/diary_entry.dart';
 import '../widgets/diary_entry_search_delegate.dart';
+import '../screens/statistics_page.dart';
 
 class AppDrawer extends StatelessWidget {
   final List<DiaryEntry> entries;
@@ -75,6 +76,17 @@ class AppDrawer extends StatelessWidget {
               if (picked != null) {
                 onSearchDate(picked);
               }
+            },
+          ),
+          _DrawerTile(
+            icon: Icons.analytics_rounded,
+            label: 'Statistics',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const StatisticsPage()),
+              );
             },
           ),
           _DrawerTile(
