@@ -226,13 +226,6 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
                 color: theme.colorScheme.primary,
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              '(Optional)',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withAlpha(128),
-              ),
-            ),
           ],
         ),
         const SizedBox(height: 12),

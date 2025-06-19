@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
 import 'package:noir_journal/services/secure_storage_service.dart';

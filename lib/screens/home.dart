@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:noir_journal/screens/settings.dart';
 import 'package:noir_journal/main.dart';
@@ -24,7 +23,8 @@ class _HomePageState extends State<HomePage> {
   bool get _isSelecting => _selectedEntries.isNotEmpty;
   String _searchQuery = '';
   DateTime? _searchDate;
-
+  String _searchDateType = 'exact'; // 'exact', 'month', 'range'
+  DateTime? _searchEndDate;
   List<DiaryEntry> get _filteredEntries {
     var filtered = _entries;
     if (_searchQuery.isNotEmpty) {
@@ -37,15 +37,45 @@ class _HomePageState extends State<HomePage> {
               .toList();
     }
     if (_searchDate != null) {
-      filtered =
-          filtered
-              .where(
-                (e) =>
-                    e.createdAt.year == _searchDate!.year &&
-                    e.createdAt.month == _searchDate!.month &&
-                    e.createdAt.day == _searchDate!.day,
-              )
-              .toList();
+      switch (_searchDateType) {
+        case 'exact':
+          filtered =
+              filtered
+                  .where(
+                    (e) =>
+                        e.createdAt.year == _searchDate!.year &&
+                        e.createdAt.month == _searchDate!.month &&
+                        e.createdAt.day == _searchDate!.day,
+                  )
+                  .toList();
+          break;
+        case 'month':
+          filtered =
+              filtered
+                  .where(
+                    (e) =>
+                        e.createdAt.year == _searchDate!.year &&
+                        e.createdAt.month == _searchDate!.month,
+                  )
+                  .toList();
+          break;
+        case 'range':
+          if (_searchEndDate != null) {
+            filtered =
+                filtered
+                    .where(
+                      (e) =>
+                          e.createdAt.isAfter(
+                            _searchDate!.subtract(const Duration(days: 1)),
+                          ) &&
+                          e.createdAt.isBefore(
+                            _searchEndDate!.add(const Duration(days: 1)),
+                          ),
+                    )
+                    .toList();
+          }
+          break;
+      }
     }
     return filtered;
   }
@@ -74,6 +104,8 @@ class _HomePageState extends State<HomePage> {
         _selectedEntries.clear();
         _searchQuery = '';
         _searchDate = null;
+        _searchDateType = 'exact';
+        _searchEndDate = null;
       });
       // Then load entries
       _loadEntries();
@@ -173,6 +205,32 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  String _getAppBarTitle() {
+    if (_isSelecting) {
+      return '${_selectedEntries.length} selected';
+    }
+
+    if (_searchQuery.isNotEmpty) {
+      return 'Search: "$_searchQuery"';
+    }
+
+    if (_searchDate != null) {
+      switch (_searchDateType) {
+        case 'exact':
+          return 'Date: ${_searchDate!.day}/${_searchDate!.month}/${_searchDate!.year}';
+        case 'month':
+          return 'Month: ${_searchDate!.month}/${_searchDate!.year}';
+        case 'range':
+          if (_searchEndDate != null) {
+            return 'Range: ${_searchDate!.day}/${_searchDate!.month} - ${_searchEndDate!.day}/${_searchEndDate!.month}';
+          }
+          break;
+      }
+    }
+
+    return 'Your Journal';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -185,21 +243,25 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             _searchQuery = query;
             _searchDate = null;
+            _searchDateType = 'exact';
+            _searchEndDate = null;
           });
         },
-        onSearchDate: (picked) {
+        onSearchDate: (picked, type, endDate) {
+          debugPrint(
+            'Home received date search: $picked, type: $type, endDate: $endDate',
+          );
           setState(() {
             _searchDate = picked;
+            _searchDateType = type;
+            _searchEndDate = endDate;
             _searchQuery = '';
           });
         },
         onSettings: () => _onSettingsPressed(context),
-        version: "",
       ),
       appBar: AppBar(
-        title: Text(
-          _isSelecting ? '${_selectedEntries.length} selected' : 'Your Journal',
-        ),
+        title: Text(_getAppBarTitle()),
         titleSpacing: 0,
         centerTitle: !(_searchQuery.isNotEmpty || _searchDate != null),
         elevation: 0,
@@ -214,6 +276,8 @@ class _HomePageState extends State<HomePage> {
                 setState(() {
                   _searchQuery = '';
                   _searchDate = null;
+                  _searchDateType = 'exact';
+                  _searchEndDate = null;
                 });
               },
             ),
