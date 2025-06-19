@@ -1,7 +1,7 @@
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:noir_journal/services/secure_storage_service.dart';
 import '../utils/dialog_utils.dart';
 import '../models/mood.dart';
 import '../widgets/entry_header_section.dart';
@@ -117,22 +117,21 @@ class _EntryPageState extends State<EntryPage> {
   }
 
   Future<void> _saveToPreferences(DiaryEntry updatedEntry) async {
-    final prefs = await SharedPreferences.getInstance();
-    final entriesJson = prefs.getStringList('diary_entries') ?? [];
-    final updatedJson =
-        entriesJson.map((e) {
-          try {
-            final decoded = DiaryEntry.fromJson(
-              Map<String, dynamic>.from(jsonDecode(e)),
-            );
-            if (decoded.title == _currentEntry.title &&
-                decoded.createdAt == _currentEntry.createdAt) {
-              return jsonEncode(updatedEntry.toJson());
+    try {
+      final allEntries = await SecureStorageService.loadEntries();
+      final updatedEntries =
+          allEntries.map((entry) {
+            if (entry.title == _currentEntry.title &&
+                entry.createdAt == _currentEntry.createdAt) {
+              return updatedEntry;
             }
-          } catch (_) {}
-          return e;
-        }).toList();
-    await prefs.setStringList('diary_entries', updatedJson);
+            return entry;
+          }).toList();
+
+      await SecureStorageService.saveEntries(updatedEntries);
+    } catch (e) {
+      debugPrint('Error updating entry: $e');
+    }
   }
 
   Future<void> _deleteEntry() async {
@@ -144,25 +143,21 @@ class _EntryPageState extends State<EntryPage> {
       confirmText: 'Delete',
       isDestructive: true,
     );
-
     if (confirmed == true) {
-      final prefs = await SharedPreferences.getInstance();
-      final entriesJson = prefs.getStringList('diary_entries') ?? [];
-      final updatedJson =
-          entriesJson.where((e) {
-            try {
-              final decoded = DiaryEntry.fromJson(
-                Map<String, dynamic>.from(jsonDecode(e)),
-              );
-              return !(decoded.title == _currentEntry.title &&
-                  decoded.createdAt == _currentEntry.createdAt);
-            } catch (_) {}
-            return true;
-          }).toList();
-      await prefs.setStringList('diary_entries', updatedJson);
+      try {
+        final allEntries = await SecureStorageService.loadEntries();
+        final filteredEntries =
+            allEntries.where((entry) {
+              return !(entry.title == _currentEntry.title &&
+                  entry.createdAt == _currentEntry.createdAt);
+            }).toList();
+        await SecureStorageService.saveEntries(filteredEntries);
 
-      if (mounted) {
-        Navigator.of(context).pop('deleted');
+        if (mounted) {
+          Navigator.of(context).pop('deleted');
+        }
+      } catch (e) {
+        debugPrint('Error deleting entry: $e');
       }
     }
   }

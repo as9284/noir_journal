@@ -1,10 +1,10 @@
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:noir_journal/screens/settings.dart';
 import 'package:noir_journal/main.dart';
 import 'package:noir_journal/screens/entry_page.dart';
 import 'package:noir_journal/screens/create_entry_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:noir_journal/services/secure_storage_service.dart';
 import 'package:noir_journal/models/diary_entry.dart';
 import 'package:noir_journal/widgets/diary_entry_grouped_list.dart';
 import '../constants/ui_constants.dart';
@@ -82,21 +82,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadEntries() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final entriesJson = prefs.getStringList('diary_entries') ?? [];
-
-      final loadedEntries = <DiaryEntry>[];
-      for (final entryString in entriesJson) {
-        try {
-          final decoded = jsonDecode(entryString);
-          if (decoded is Map<String, dynamic>) {
-            loadedEntries.add(DiaryEntry.fromJson(decoded));
-          }
-        } catch (e) {
-          // Skip invalid entries
-          debugPrint('Skipping invalid entry: $e');
-        }
-      }
+      final loadedEntries = await SecureStorageService.loadEntries();
 
       if (mounted) {
         setState(() {
@@ -114,9 +100,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _saveEntries() async {
-    final prefs = await SharedPreferences.getInstance();
-    final entriesJson = _entries.map((e) => jsonEncode(e.toJson())).toList();
-    await prefs.setStringList('diary_entries', entriesJson);
+    await SecureStorageService.saveEntries(_entries);
   }
 
   void _onSettingsPressed(BuildContext context) async {

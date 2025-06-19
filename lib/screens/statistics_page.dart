@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/diary_entry.dart';
 import '../models/mood.dart';
+import '../services/secure_storage_service.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -23,23 +22,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   Future<void> _loadEntries() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final entriesJson = prefs.getStringList('diary_entries') ?? [];
-      final entries =
-          entriesJson
-              .map((e) {
-                try {
-                  return DiaryEntry.fromJson(
-                    Map<String, dynamic>.from(jsonDecode(e)),
-                  );
-                } catch (_) {
-                  return null;
-                }
-              })
-              .where((e) => e != null)
-              .cast<DiaryEntry>()
-              .toList();
-
+      final entries = await SecureStorageService.loadEntries();
       entries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       setState(() {
@@ -136,9 +119,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     const SizedBox(height: 24),
                     _buildWritingStats(theme),
                     const SizedBox(height: 24),
-                    _buildMoodStats(theme),
-                    const SizedBox(height: 24),
                     _buildStreakSection(theme),
+                    const SizedBox(height: 24),
+                    _buildMoodStats(theme),
                   ],
                 ),
               ),

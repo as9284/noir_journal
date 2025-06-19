@@ -30,7 +30,6 @@ class EncryptionService {
 
       final plaintextBytes = utf8.encode(plaintext);
       final encryptedBytes = _xorEncrypt(plaintextBytes, key, iv);
-
       return EncryptedData(
         data: base64.encode(encryptedBytes),
         iv: base64.encode(iv),
@@ -48,17 +47,13 @@ class EncryptionService {
       final iv = base64.decode(encryptedData.iv);
       final salt = utf8.decode(base64.decode(encryptedData.salt));
 
-      if (salt != _salt) {
-        throw EncryptionException('Invalid backup file format');
-      }
-
       final key = _deriveKey(password, salt);
 
       final decryptedBytes = _xorDecrypt(encryptedBytes, key, iv);
+      final result = utf8.decode(decryptedBytes);
 
-      return utf8.decode(decryptedBytes);
+      return result;
     } catch (e) {
-      if (e is EncryptionException) rethrow;
       throw EncryptionException('Failed to decrypt data: ${e.toString()}');
     }
   }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dialog_utils.dart';
 
@@ -28,8 +29,13 @@ class DataOperationDialogs {
   }
 
   static void hideLoadingDialog(BuildContext context) {
-    if (context.mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
+    try {
+      if (context.mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      // Silently handle any navigation errors
+      debugPrint('Error hiding loading dialog: $e');
     }
   }
 

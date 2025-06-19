@@ -186,32 +186,35 @@ class SettingsSections {
       children: [
         SettingsWidgets.buildSectionHeader(
           theme,
-          'Data Management',
-          Icons.folder,
+          'Data Management (Encrypted)',
+          Icons.security,
         ),
         SettingsWidgets.buildSettingsCard(
           theme,
           children: [
             SettingsWidgets.buildModernTile(
               theme,
-              title: 'Export Data',
-              subtitle: 'Share your journal entries as backup file',
-              icon: Icons.file_download,
+              title: 'Export Encrypted Backup',
+              subtitle:
+                  'Create a secure, password-protected backup file of all your journal entries that can be safely shared or stored',
+              icon: Icons.file_upload,
               onTap: () => controller.exportData(context),
             ),
             SettingsWidgets.buildDivider(theme),
             SettingsWidgets.buildModernTile(
               theme,
-              title: 'Import Data',
-              subtitle: 'Restore journal entries from backup file',
-              icon: Icons.file_upload,
+              title: 'Import Encrypted Backup',
+              subtitle:
+                  'Restore journal entries from a password-protected backup file created by this app',
+              icon: Icons.file_download,
               onTap: () => controller.importData(context),
             ),
             SettingsWidgets.buildDivider(theme),
             SettingsWidgets.buildModernTile(
               theme,
               title: 'Delete All Data',
-              subtitle: 'Permanently remove all journal entries',
+              subtitle:
+                  'Permanently remove all journal entries, settings, and encryption keys from this device',
               icon: Icons.delete_forever,
               onTap: () => _showDeleteAllDataDialog(context, controller),
             ),

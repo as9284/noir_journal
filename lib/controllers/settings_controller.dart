@@ -11,6 +11,7 @@ import '../utils/dialog_utils.dart';
 import '../main.dart';
 import '../widgets/pin_lock_screen.dart';
 import '../services/data_export_import_service.dart';
+import '../services/secure_storage_service.dart';
 import '../theme/app_theme.dart';
 
 class SettingsController extends ChangeNotifier {
@@ -27,7 +28,6 @@ class SettingsController extends ChangeNotifier {
   bool get biometricEnabled => _biometricEnabled;
   bool get isLoading => _isLoading;
   AppColorTheme get selectedColorTheme => _selectedColorTheme;
-
   Future<void> initialize() async {
     await _loadAllSettings();
   }
@@ -377,14 +377,24 @@ class SettingsController extends ChangeNotifier {
       }
 
       if (!context.mounted) return;
-
       await DataOperationDialogs.showResultDialog(
         context,
         success: result.success,
         title: result.success ? 'Import Successful' : 'Import Failed',
         message: result.message,
       );
+
       if (result.success) {
+        // Show security notice about deleting backup file
+        if (!context.mounted) return;
+        await DataOperationDialogs.showResultDialog(
+          context,
+          success: true,
+          title: 'Security Notice',
+          message:
+              'For extra security, consider deleting the backup file from your device unless you still need it. Your data has been safely imported and encrypted on this device.',
+        );
+
         // Trigger global data refresh notifier
         globalDataRefreshNotifier.value++;
 
@@ -410,17 +420,36 @@ class SettingsController extends ChangeNotifier {
   }
 
   Future<void> deleteAllData(BuildContext context) async {
+    if (!context.mounted) return;
+
+    // Show loading dialog and store the navigator reference
+    final navigator = Navigator.of(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (dialogContext) => const Dialog(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 20),
+                  Text('Deleting all data...'),
+                ],
+              ),
+            ),
+          ),
+    );
+
     try {
-      if (!context.mounted) return;
-
-      // Show loading dialog
-      DataOperationDialogs.showLoadingDialog(context, 'Deleting all data...');
-
-      // Clear all shared preferences data related to diary entries
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('diary_entries');
+      // Clear all encrypted diary entries
+      await SecureStorageService.clearAllData();
 
       // Reset app settings to defaults (keep theme preferences but clear data)
+      final prefs = await SharedPreferences.getInstance();
       await prefs.remove('has_password');
       await prefs.remove('password_hash');
       await prefs.remove('salt');
@@ -442,14 +471,19 @@ class SettingsController extends ChangeNotifier {
       for (String key in keys) {
         await prefs.remove(key);
       }
-      if (!context.mounted) return;
 
-      // Hide loading dialog
-      DataOperationDialogs.hideLoadingDialog(context);
-
-      // Trigger global data refresh immediately after clearing data
-      // This ensures the home screen starts refreshing before we show the success dialog
+      // Trigger global data refresh
       globalDataRefreshNotifier.value++;
+
+      // Close loading dialog
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+
+      // Small delay to ensure loading dialog is fully dismissed
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      if (!context.mounted) return;
 
       // Show success dialog
       await DataOperationDialogs.showResultDialog(
@@ -459,9 +493,15 @@ class SettingsController extends ChangeNotifier {
         message: 'All your journal data has been permanently deleted.',
       );
     } catch (e) {
-      if (!context.mounted) return;
+      // Close loading dialog first
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
 
-      DataOperationDialogs.hideLoadingDialog(context);
+      // Small delay before showing error dialog
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      if (!context.mounted) return;
 
       await DataOperationDialogs.showResultDialog(
         context,

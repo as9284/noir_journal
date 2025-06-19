@@ -3,36 +3,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/diary_entry.dart';
 import '../services/encryption_service.dart';
+import '../services/secure_storage_service.dart';
 
 class DataExportImportService {
   static Future<List<DiaryEntry>> _loadAllEntries() async {
-    final prefs = await SharedPreferences.getInstance();
-    final entriesJson = prefs.getStringList('diary_entries') ?? [];
-
-    return entriesJson
-        .map((entryJson) {
-          try {
-            final decoded = jsonDecode(entryJson);
-            if (decoded is Map<String, dynamic>) {
-              return DiaryEntry.fromJson(decoded);
-            }
-          } catch (e) {
-            debugPrint('Error parsing entry: $e');
-          }
-          return null;
-        })
-        .whereType<DiaryEntry>()
-        .toList();
+    return await SecureStorageService.loadEntriesForExport();
   }
 
   static Future<void> _saveAllEntries(List<DiaryEntry> entries) async {
-    final prefs = await SharedPreferences.getInstance();
-    final entriesJson =
-        entries.map((entry) => jsonEncode(entry.toJson())).toList();
-    await prefs.setStringList('diary_entries', entriesJson);
+    await SecureStorageService.saveEntriesFromImport(entries);
   }
 
   static Future<ExportResult> exportData() async {
@@ -160,16 +141,23 @@ class DataExportImportService {
           final encryptionInfo =
               jsonData['encryption_info'] as Map<String, dynamic>;
           debugPrint('Encryption info found: ${encryptionInfo.keys.toList()}');
-
           final encryptedData = EncryptedData.fromJson(encryptionInfo);
+          debugPrint(
+            '📥 IMPORT DEBUG: Created EncryptedData object, attempting decryption...',
+          );
+
           final decryptedJsonString = EncryptionService.decryptData(
             encryptedData,
             password,
           );
 
-          debugPrint('Decryption successful, parsing JSON...');
+          debugPrint(
+            '📥 IMPORT DEBUG: Decryption successful, parsing JSON (size: ${decryptedJsonString.length} chars)...',
+          );
           entriesData = jsonDecode(decryptedJsonString) as Map<String, dynamic>;
-          debugPrint('Parsed entries data keys: ${entriesData.keys.toList()}');
+          debugPrint(
+            '📥 IMPORT DEBUG: Parsed entries data keys: ${entriesData.keys.toList()}',
+          );
         } catch (e) {
           debugPrint('Decryption failed: $e');
           return ImportResult(
@@ -280,10 +268,7 @@ class DataExportImportService {
       Map<String, dynamic> entriesData;
 
       if (fileCheck.isEncrypted) {
-        debugPrint('File is encrypted, checking password...');
-
         if (password == null || password.isEmpty) {
-          debugPrint('No password provided for encrypted file');
           return ImportResult(
             success: false,
             message:
@@ -293,21 +278,17 @@ class DataExportImportService {
         }
 
         try {
-          debugPrint('Attempting to decrypt with provided password...');
           final encryptionInfo =
               jsonData['encryption_info'] as Map<String, dynamic>;
-          debugPrint('Encryption info found: ${encryptionInfo.keys.toList()}');
           final encryptedData = EncryptedData.fromJson(encryptionInfo);
+
           final decryptedJsonString = EncryptionService.decryptData(
             encryptedData,
             password,
           );
 
-          debugPrint('Decryption successful, parsing JSON...');
           entriesData = jsonDecode(decryptedJsonString) as Map<String, dynamic>;
-          debugPrint('Parsed entries data keys: ${entriesData.keys.toList()}');
         } catch (e) {
-          debugPrint('Decryption failed: $e');
           return ImportResult(
             success: false,
             message:
@@ -315,7 +296,6 @@ class DataExportImportService {
           );
         }
       } else {
-        debugPrint('File is not encrypted, using direct data');
         entriesData = jsonData;
       }
 
