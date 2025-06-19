@@ -25,17 +25,19 @@ class _EntryPageState extends State<EntryPage> {
   late final TextEditingController _descriptionController;
   late int _selectedIconIndex;
   late Mood? _selectedMood;
+  late DiaryEntry _currentEntry;
   bool _isEditing = false;
   bool _hasChanges = false;
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.entry.title);
+    _currentEntry = widget.entry;
+    _titleController = TextEditingController(text: _currentEntry.title);
     _descriptionController = TextEditingController(
-      text: widget.entry.description,
+      text: _currentEntry.description,
     );
-    _selectedIconIndex = widget.entry.iconIndex;
-    _selectedMood = widget.entry.mood;
+    _selectedIconIndex = _currentEntry.iconIndex;
+    _selectedMood = _currentEntry.mood;
 
     _titleController.addListener(_onTextChanged);
     _descriptionController.addListener(_onTextChanged);
@@ -50,10 +52,10 @@ class _EntryPageState extends State<EntryPage> {
 
   void _onTextChanged() {
     final hasChanges =
-        _titleController.text != widget.entry.title ||
-        _descriptionController.text != widget.entry.description ||
-        _selectedIconIndex != widget.entry.iconIndex ||
-        _selectedMood != widget.entry.mood;
+        _titleController.text != _currentEntry.title ||
+        _descriptionController.text != _currentEntry.description ||
+        _selectedIconIndex != _currentEntry.iconIndex ||
+        _selectedMood != _currentEntry.mood;
 
     if (_hasChanges != hasChanges) {
       setState(() {
@@ -71,9 +73,10 @@ class _EntryPageState extends State<EntryPage> {
   void _cancelEditing() {
     setState(() {
       _isEditing = false;
-      _titleController.text = widget.entry.title;
-      _descriptionController.text = widget.entry.description;
-      _selectedIconIndex = widget.entry.iconIndex;
+      _titleController.text = _currentEntry.title;
+      _descriptionController.text = _currentEntry.description;
+      _selectedIconIndex = _currentEntry.iconIndex;
+      _selectedMood = _currentEntry.mood;
       _hasChanges = false;
     });
   }
@@ -88,7 +91,7 @@ class _EntryPageState extends State<EntryPage> {
     final updatedEntry = DiaryEntry(
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
-      createdAt: widget.entry.createdAt,
+      createdAt: _currentEntry.createdAt,
       iconIndex: _selectedIconIndex,
       mood: _selectedMood,
     );
@@ -97,11 +100,20 @@ class _EntryPageState extends State<EntryPage> {
     await _saveToPreferences(updatedEntry);
 
     setState(() {
+      _currentEntry = updatedEntry; // Update the current entry
       _isEditing = false;
       _hasChanges = false;
     });
-    if (!mounted) return;
-    Navigator.of(context).pop(updatedEntry);
+
+    // Show success message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Entry saved successfully'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<void> _saveToPreferences(DiaryEntry updatedEntry) async {
@@ -113,8 +125,8 @@ class _EntryPageState extends State<EntryPage> {
             final decoded = DiaryEntry.fromJson(
               Map<String, dynamic>.from(jsonDecode(e)),
             );
-            if (decoded.title == widget.entry.title &&
-                decoded.createdAt == widget.entry.createdAt) {
+            if (decoded.title == _currentEntry.title &&
+                decoded.createdAt == _currentEntry.createdAt) {
               return jsonEncode(updatedEntry.toJson());
             }
           } catch (_) {}
@@ -142,8 +154,8 @@ class _EntryPageState extends State<EntryPage> {
               final decoded = DiaryEntry.fromJson(
                 Map<String, dynamic>.from(jsonDecode(e)),
               );
-              return !(decoded.title == widget.entry.title &&
-                  decoded.createdAt == widget.entry.createdAt);
+              return !(decoded.title == _currentEntry.title &&
+                  decoded.createdAt == _currentEntry.createdAt);
             } catch (_) {}
             return true;
           }).toList();
@@ -206,7 +218,7 @@ class _EntryPageState extends State<EntryPage> {
                   children: [
                     EntryHeaderSection(
                       selectedIconIndex: _selectedIconIndex,
-                      createdAt: widget.entry.createdAt,
+                      createdAt: _currentEntry.createdAt,
                     ),
                     const SizedBox(height: 24),
                     EntryTitleSection(
@@ -248,7 +260,7 @@ class _EntryPageState extends State<EntryPage> {
                   children: [
                     EntryHeaderSection(
                       selectedIconIndex: _selectedIconIndex,
-                      createdAt: widget.entry.createdAt,
+                      createdAt: _currentEntry.createdAt,
                     ),
                     const SizedBox(height: 24),
                     EntryTitleSection(
@@ -267,8 +279,8 @@ class _EntryPageState extends State<EntryPage> {
                     const SizedBox(height: 16),
                     // Slim entry details pushed to bottom
                     EntryMetadataSection(
-                      createdAt: widget.entry.createdAt,
-                      mood: widget.entry.mood,
+                      createdAt: _currentEntry.createdAt,
+                      mood: _currentEntry.mood,
                     ),
                   ],
                 ),
