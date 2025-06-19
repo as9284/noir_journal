@@ -197,55 +197,82 @@ class _EntryPageState extends State<EntryPage> {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            EntryHeaderSection(
-              selectedIconIndex: _selectedIconIndex,
-              createdAt: widget.entry.createdAt,
-            ),
-            const SizedBox(height: 24),
-            EntryTitleSection(
-              titleController: _titleController,
-              isEditing: _isEditing,
-            ),
-            const SizedBox(height: 20),
-            EntryDescriptionSection(
-              descriptionController: _descriptionController,
-              isEditing: _isEditing,
-            ),
-            const SizedBox(height: 20),
-            if (_isEditing)
-              EntryMoodSection(
-                selectedMood: _selectedMood,
-                onMoodChanged: (mood) {
-                  setState(() {
-                    _selectedMood = mood;
-                    _onTextChanged();
-                  });
-                },
+      body:
+          _isEditing
+              ? SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    EntryHeaderSection(
+                      selectedIconIndex: _selectedIconIndex,
+                      createdAt: widget.entry.createdAt,
+                    ),
+                    const SizedBox(height: 24),
+                    EntryTitleSection(
+                      titleController: _titleController,
+                      isEditing: _isEditing,
+                    ),
+                    const SizedBox(height: 20),
+                    EntryDescriptionSection(
+                      descriptionController: _descriptionController,
+                      isEditing: _isEditing,
+                    ),
+                    const SizedBox(height: 20),
+                    EntryMoodSection(
+                      selectedMood: _selectedMood,
+                      onMoodChanged: (mood) {
+                        setState(() {
+                          _selectedMood = mood;
+                          _onTextChanged();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    EntryIconSection(
+                      selectedIconIndex: _selectedIconIndex,
+                      onIconChanged: (index) {
+                        setState(() {
+                          _selectedIconIndex = index;
+                          _onTextChanged();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              )
+              : Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    EntryHeaderSection(
+                      selectedIconIndex: _selectedIconIndex,
+                      createdAt: widget.entry.createdAt,
+                    ),
+                    const SizedBox(height: 24),
+                    EntryTitleSection(
+                      titleController: _titleController,
+                      isEditing: _isEditing,
+                    ),
+                    const SizedBox(height: 20),
+                    // Description takes up remaining space in non-edit mode
+                    Expanded(
+                      child: EntryDescriptionSection(
+                        descriptionController: _descriptionController,
+                        isEditing: _isEditing,
+                        expandToFill: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Slim entry details pushed to bottom
+                    EntryMetadataSection(
+                      createdAt: widget.entry.createdAt,
+                      mood: widget.entry.mood,
+                    ),
+                  ],
+                ),
               ),
-            const SizedBox(height: 20),
-            if (_isEditing)
-              EntryIconSection(
-                selectedIconIndex: _selectedIconIndex,
-                onIconChanged: (index) {
-                  setState(() {
-                    _selectedIconIndex = index;
-                    _onTextChanged();
-                  });
-                },
-              ),
-            if (!_isEditing)
-              EntryMetadataSection(
-                createdAt: widget.entry.createdAt,
-                mood: widget.entry.mood,
-              ),
-          ],
-        ),
-      ),
       floatingActionButton:
           _isEditing
               ? FloatingActionButton(
