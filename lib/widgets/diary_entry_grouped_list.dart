@@ -129,6 +129,19 @@ class DiaryEntryGroupedList extends StatelessWidget {
                 final isFirst = index == 0;
                 final isLast = index == entries.length - 1;
 
+                final isCurrentSelected =
+                    selectedEntries?.contains(entry) ?? false;
+                final nextEntry = !isLast ? entries[index + 1] : null;
+                final isNextSelected =
+                    nextEntry != null
+                        ? (selectedEntries?.contains(nextEntry) ?? false)
+                        : false;
+
+                // Hide divider when both current and next entry are selected
+                // to maintain visual continuity of selection highlighting
+                final shouldShowDivider =
+                    !isLast && !(isCurrentSelected && isNextSelected);
+
                 return Column(
                   children: [
                     DiaryEntryCard(
@@ -138,12 +151,12 @@ class DiaryEntryGroupedList extends StatelessWidget {
                           onLongPress != null
                               ? () => onLongPress!(entry)
                               : null,
-                      selected: selectedEntries?.contains(entry) ?? false,
+                      selected: isCurrentSelected,
                       isInGroup: true,
                       isFirstInGroup: isFirst,
                       isLastInGroup: isLast,
                     ),
-                    if (!isLast)
+                    if (shouldShowDivider)
                       Divider(
                         height: 1,
                         color: theme.dividerColor.withAlpha(77),
