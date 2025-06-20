@@ -43,20 +43,18 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
     }).toList();
   }
 
-  double get _averageMoodScore {
-    final allMoodEntries =
-        _entries.where((entry) => entry.mood != null).toList();
-    if (allMoodEntries.isEmpty) return 0.55;
+  double get _monthlyAverageMoodScore {
+    if (_currentMonthEntries.isEmpty) return 0.55;
 
     double totalScore = 0.0;
-    for (final entry in allMoodEntries) {
+    for (final entry in _currentMonthEntries) {
       totalScore += _getMoodScore(entry.mood!);
     }
-    return totalScore / allMoodEntries.length;
+    return totalScore / _currentMonthEntries.length;
   }
 
-  String get _averageMoodDescription {
-    final score = _averageMoodScore;
+  String get _monthlyAverageMoodDescription {
+    final score = _monthlyAverageMoodScore;
     if (score < 0.35) return 'Very Negative';
     if (score < 0.5) return 'Negative';
     if (score < 0.65) return 'Neutral';
@@ -139,11 +137,6 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
     return dailyMoods;
   }
 
-  Color _getSimplifiedMoodColor(Mood mood) {
-    final score = _getMoodScore(mood);
-    return _getColorFromScore(score);
-  }
-
   Color _getColorFromScore(double score) {
     if (score <= 0.5) {
       final t = score * 2;
@@ -154,19 +147,15 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
     }
   }
 
-  MoodData? _getDominantMoodForDay(int day) {
+  double? _getAverageMoodScoreForDay(int day) {
     final moods = _dailyMoods[day];
     if (moods == null || moods.isEmpty) return null;
 
-    final Map<Mood, int> moodCounts = {};
+    double totalScore = 0.0;
     for (final mood in moods) {
-      moodCounts[mood] = (moodCounts[mood] ?? 0) + 1;
+      totalScore += _getMoodScore(mood);
     }
-
-    Mood dominantMood =
-        moodCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-
-    return MoodHelper.getMoodData(dominantMood);
+    return totalScore / moods.length;
   }
 
   Widget _buildMoodCalendar() {
@@ -208,20 +197,20 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
               children: List.generate(7, (dayIndex) {
                 final dayNumber =
                     weekIndex * 7 + dayIndex - firstDayWeekday + 1;
-
                 if (dayNumber < 1 || dayNumber > daysInMonth) {
                   return const Expanded(child: SizedBox(height: 40));
                 }
-                final dominantMood = _getDominantMoodForDay(dayNumber);
+
+                final averageScore = _getAverageMoodScoreForDay(dayNumber);
                 final moodCount = (_dailyMoods[dayNumber]?.length ?? 0);
                 final opacity =
                     moodCount > 0
                         ? (0.3 + (moodCount * 0.15)).clamp(0.3, 1.0)
                         : 0.3;
 
-                final simplifiedColor =
-                    dominantMood != null
-                        ? _getSimplifiedMoodColor(dominantMood.mood)
+                final moodColor =
+                    averageScore != null
+                        ? _getColorFromScore(averageScore)
                         : null;
 
                 return Expanded(
@@ -230,38 +219,30 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                     margin: const EdgeInsets.all(1),
                     decoration: BoxDecoration(
                       color:
-                          simplifiedColor?.withValues(alpha: opacity) ??
+                          moodColor?.withValues(alpha: opacity) ??
                           Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color:
-                            simplifiedColor ??
+                            moodColor ??
                             Theme.of(
                               context,
                             ).dividerColor.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          dayNumber.toString(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white
-                                    : Colors.black,
-                          ),
+                    child: Center(
+                      child: Text(
+                        dayNumber.toString(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black,
                         ),
-                        if (dominantMood != null)
-                          Text(
-                            dominantMood.emoji,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                      ],
+                      ),
                     ),
                   ),
                 );
@@ -535,16 +516,16 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                _averageMoodScore < 0.35
+                _monthlyAverageMoodScore < 0.35
                     ? Icons.sentiment_very_dissatisfied
-                    : _averageMoodScore < 0.5
+                    : _monthlyAverageMoodScore < 0.5
                     ? Icons.sentiment_dissatisfied
-                    : _averageMoodScore < 0.65
+                    : _monthlyAverageMoodScore < 0.65
                     ? Icons.sentiment_neutral
-                    : _averageMoodScore < 0.8
+                    : _monthlyAverageMoodScore < 0.8
                     ? Icons.sentiment_satisfied
                     : Icons.sentiment_very_satisfied,
-                color: _getColorFromScore(_averageMoodScore),
+                color: _getColorFromScore(_monthlyAverageMoodScore),
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -552,7 +533,7 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Overall Average',
+                    'Monthly Average',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -560,11 +541,11 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                     ),
                   ),
                   Text(
-                    _averageMoodDescription,
+                    _monthlyAverageMoodDescription,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: _getColorFromScore(_averageMoodScore),
+                      color: _getColorFromScore(_monthlyAverageMoodScore),
                     ),
                   ),
                 ],
@@ -763,7 +744,7 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'See your daily mood patterns at a glance. Each day shows your most common mood with its emoji and color.',
+                            'See your daily mood patterns at a glance. Each day shows the average mood score as a color - from red (negative) to green (positive).',
                             style: TextStyle(
                               fontSize: 13,
                               color:
