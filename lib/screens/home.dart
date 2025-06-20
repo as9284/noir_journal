@@ -22,64 +22,6 @@ class _HomePageState extends State<HomePage> {
   List<DiaryEntry> _entries = [];
   final Set<DiaryEntry> _selectedEntries = {};
   bool get _isSelecting => _selectedEntries.isNotEmpty;
-  String _searchQuery = '';
-  DateTime? _searchDate;
-  String _searchDateType = 'exact'; // 'exact', 'month', 'range'
-  DateTime? _searchEndDate;
-  List<DiaryEntry> get _filteredEntries {
-    var filtered = _entries;
-    if (_searchQuery.isNotEmpty) {
-      filtered =
-          filtered
-              .where(
-                (e) =>
-                    e.title.toLowerCase().contains(_searchQuery.toLowerCase()),
-              )
-              .toList();
-    }
-    if (_searchDate != null) {
-      switch (_searchDateType) {
-        case 'exact':
-          filtered =
-              filtered
-                  .where(
-                    (e) =>
-                        e.createdAt.year == _searchDate!.year &&
-                        e.createdAt.month == _searchDate!.month &&
-                        e.createdAt.day == _searchDate!.day,
-                  )
-                  .toList();
-          break;
-        case 'month':
-          filtered =
-              filtered
-                  .where(
-                    (e) =>
-                        e.createdAt.year == _searchDate!.year &&
-                        e.createdAt.month == _searchDate!.month,
-                  )
-                  .toList();
-          break;
-        case 'range':
-          if (_searchEndDate != null) {
-            filtered =
-                filtered
-                    .where(
-                      (e) =>
-                          e.createdAt.isAfter(
-                            _searchDate!.subtract(const Duration(days: 1)),
-                          ) &&
-                          e.createdAt.isBefore(
-                            _searchEndDate!.add(const Duration(days: 1)),
-                          ),
-                    )
-                    .toList();
-          }
-          break;
-      }
-    }
-    return filtered;
-  }
 
   @override
   void initState() {
@@ -103,10 +45,6 @@ class _HomePageState extends State<HomePage> {
         // Clear current entries first to ensure proper state reset
         _entries.clear();
         _selectedEntries.clear();
-        _searchQuery = '';
-        _searchDate = null;
-        _searchDateType = 'exact';
-        _searchEndDate = null;
       });
       // Then load entries
       _loadEntries();
@@ -229,24 +167,6 @@ class _HomePageState extends State<HomePage> {
       return '${_selectedEntries.length} selected';
     }
 
-    if (_searchQuery.isNotEmpty) {
-      return 'Search: "$_searchQuery"';
-    }
-
-    if (_searchDate != null) {
-      switch (_searchDateType) {
-        case 'exact':
-          return 'Date: ${_searchDate!.day}/${_searchDate!.month}/${_searchDate!.year}';
-        case 'month':
-          return 'Month: ${_searchDate!.month}/${_searchDate!.year}';
-        case 'range':
-          if (_searchEndDate != null) {
-            return 'Range: ${_searchDate!.day}/${_searchDate!.month} - ${_searchEndDate!.day}/${_searchEndDate!.month}';
-          }
-          break;
-      }
-    }
-
     return 'Your Journal';
   }
 
@@ -258,48 +178,29 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: theme.scaffoldBackgroundColor,
       drawer: AppDrawer(
         entries: _entries,
-        onSearchTitle: (query) {
+        onEntryUpdate: (updatedEntry) {
           setState(() {
-            _searchQuery = query;
-            _searchDate = null;
-            _searchDateType = 'exact';
-            _searchEndDate = null;
+            final index = _entries.indexWhere(
+              (e) =>
+                  e.title == updatedEntry.title &&
+                  e.createdAt == updatedEntry.createdAt,
+            );
+            if (index != -1) {
+              _entries[index] = updatedEntry;
+            }
           });
-        },
-        onSearchDate: (picked, type, endDate) {
-          debugPrint(
-            'Home received date search: $picked, type: $type, endDate: $endDate',
-          );
-          setState(() {
-            _searchDate = picked;
-            _searchDateType = type;
-            _searchEndDate = endDate;
-            _searchQuery = '';
-          });
+          _saveEntries();
         },
         onSettings: () => _onSettingsPressed(context),
       ),
       appBar: AppBar(
         title: Text(_getAppBarTitle()),
         titleSpacing: 0,
-        centerTitle: !(_searchQuery.isNotEmpty || _searchDate != null),
+        centerTitle: !_isSelecting,
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: theme.colorScheme.onSurface,
         actions: [
-          if (_searchQuery.isNotEmpty || _searchDate != null)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              tooltip: 'Clear Search',
-              onPressed: () {
-                setState(() {
-                  _searchQuery = '';
-                  _searchDate = null;
-                  _searchDateType = 'exact';
-                  _searchEndDate = null;
-                });
-              },
-            ),
           if (_isSelecting)
             IconButton(
               icon: const Icon(Icons.close),
@@ -319,7 +220,7 @@ class _HomePageState extends State<HomePage> {
               : SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
                 child: DiaryEntryGroupedList(
-                  entries: _filteredEntries,
+                  entries: _entries,
                   onTap: _onEntryTap,
                   onLongPress: _onEntryLongPress,
                   selectedEntries: _selectedEntries,

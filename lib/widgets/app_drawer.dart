@@ -1,23 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../models/diary_entry.dart';
-import '../widgets/diary_entry_search_delegate.dart';
+import '../screens/unified_search_page.dart';
 import '../screens/statistics_page.dart';
 import '../screens/mood_tracker_page.dart';
-import '../screens/entry_page.dart';
 
 class AppDrawer extends StatefulWidget {
   final List<DiaryEntry> entries;
-  final void Function(String query) onSearchTitle;
-  final void Function(DateTime date, String type, DateTime? endDate)
-  onSearchDate;
+  final Function(DiaryEntry)? onEntryUpdate;
   final VoidCallback onSettings;
 
   const AppDrawer({
     super.key,
     required this.entries,
-    required this.onSearchTitle,
-    required this.onSearchDate,
+    this.onEntryUpdate,
     required this.onSettings,
   });
 
@@ -124,48 +120,22 @@ class _AppDrawerState extends State<AppDrawer> {
                   const SizedBox(height: 12),
                   _ModernDrawerTile(
                     icon: Icons.search,
-                    label: 'Smart Search',
-                    subtitle: 'Search by title, content, or mood',
+                    label: 'Search & Filter',
+                    subtitle: 'Find entries by text, mood, or date',
                     onTap: () async {
                       Navigator.pop(context);
-                      final selectedEntry = await showSearch<DiaryEntry?>(
-                        context: context,
-                        delegate: DiaryEntrySearchDelegate(widget.entries),
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => UnifiedSearchPage(
+                                entries: widget.entries,
+                                onEntryUpdate: widget.onEntryUpdate,
+                              ),
+                        ),
                       );
-                      if (selectedEntry != null && context.mounted) {
-                        // Navigate to the entry page with proper update callback
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => EntryPage(
-                                  entry: selectedEntry,
-                                  onUpdate: (updatedEntry) {
-                                    // Find and update the entry in the list
-                                    final index = widget.entries.indexWhere(
-                                      (e) =>
-                                          e.title == selectedEntry.title &&
-                                          e.createdAt ==
-                                              selectedEntry.createdAt,
-                                    );
-                                    if (index != -1) {
-                                      widget.entries[index] = updatedEntry;
-                                    }
-                                  },
-                                ),
-                          ),
-                        );
-                      }
                     },
                     color: Colors.blue,
-                  ),
-
-                  _ModernDrawerTile(
-                    icon: Icons.date_range,
-                    label: 'Find by Date',
-                    subtitle: 'Browse entries from specific dates',
-                    onTap: () => _showDateSearchOptions(context),
-                    color: Colors.green,
                   ),
 
                   const SizedBox(height: 24),
@@ -293,111 +263,6 @@ class _AppDrawerState extends State<AppDrawer> {
       ),
     );
   }
-
-  void _showDateSearchOptions(BuildContext context) async {
-    Navigator.pop(context);
-
-    final option = await showDialog<String>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Search by Date'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _DateSearchOption(
-                  icon: Icons.today,
-                  title: 'Specific Date',
-                  subtitle: 'Find entries from a particular day',
-                  onTap: () => Navigator.of(context).pop('specific'),
-                ),
-                const SizedBox(height: 8),
-                _DateSearchOption(
-                  icon: Icons.calendar_month,
-                  title: 'This Month',
-                  subtitle:
-                      'Show all entries from ${DateTime.now().month}/${DateTime.now().year}',
-                  onTap: () => Navigator.of(context).pop('month'),
-                ),
-                const SizedBox(height: 8),
-                _DateSearchOption(
-                  icon: Icons.date_range,
-                  title: 'Date Range',
-                  subtitle: 'Find entries within a time period',
-                  onTap: () => Navigator.of(context).pop('range'),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-            ],
-          ),
-    );
-
-    if (option != null && context.mounted) {
-      await _handleDateSearchOption(context, option);
-    }
-  }
-
-  Future<void> _handleDateSearchOption(
-    BuildContext context,
-    String option,
-  ) async {
-    try {
-      switch (option) {
-        case 'specific':
-          final picked = await showDatePicker(
-            context: context,
-            initialDate: DateTime.now(),
-            firstDate: DateTime(2000),
-            lastDate: DateTime(2100),
-            helpText: 'Select a date to search',
-          );
-          if (picked != null && context.mounted) {
-            debugPrint('Date search: picked date = $picked, type = exact');
-            widget.onSearchDate(picked, 'exact', null);
-          }
-          break;
-
-        case 'range':
-          final range = await showDateRangePicker(
-            context: context,
-            firstDate: DateTime(2000),
-            lastDate: DateTime(2100),
-            helpText: 'Select date range',
-          );
-          if (range != null && context.mounted) {
-            debugPrint(
-              'Date search: picked range = ${range.start} to ${range.end}',
-            );
-            widget.onSearchDate(range.start, 'range', range.end);
-          }
-          break;
-
-        case 'month':
-          final now = DateTime.now();
-          final startOfMonth = DateTime(now.year, now.month, 1);
-          if (context.mounted) {
-            debugPrint('Date search: this month = $startOfMonth');
-            widget.onSearchDate(startOfMonth, 'month', null);
-          }
-          break;
-      }
-    } catch (e) {
-      debugPrint('Error in date search: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error selecting date: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 }
 
 class _ModernDrawerTile extends StatelessWidget {
@@ -471,63 +336,6 @@ class _ModernDrawerTile extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DateSearchOption extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _DateSearchOption({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: theme.colorScheme.primary, size: 24),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withValues(
-                        alpha: 0.7,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
