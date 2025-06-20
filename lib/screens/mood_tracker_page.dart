@@ -141,7 +141,10 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
 
   Color _getSimplifiedMoodColor(Mood mood) {
     final score = _getMoodScore(mood);
+    return _getColorFromScore(score);
+  }
 
+  Color _getColorFromScore(double score) {
     if (score <= 0.5) {
       final t = score * 2;
       return Color.lerp(const Color(0xFFD32F2F), const Color(0xFFFFA726), t)!;
@@ -541,10 +544,7 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                     : _averageMoodScore < 0.8
                     ? Icons.sentiment_satisfied
                     : Icons.sentiment_very_satisfied,
-                color: _getSimplifiedMoodColor(
-                  Mood.values[(_averageMoodScore * (Mood.values.length - 1))
-                      .round()],
-                ),
+                color: _getColorFromScore(_averageMoodScore),
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -564,11 +564,7 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: _getSimplifiedMoodColor(
-                        Mood.values[(_averageMoodScore *
-                                (Mood.values.length - 1))
-                            .round()],
-                      ),
+                      color: _getColorFromScore(_averageMoodScore),
                     ),
                   ),
                 ],

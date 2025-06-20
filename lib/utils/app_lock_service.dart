@@ -1,16 +1,19 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'secure_storage_config.dart';
 
 class AppLockService {
   static const _pinKey = 'app_lock_pin';
   static const _lockEnabledKey = 'app_lock_enabled';
   static const _biometricEnabledKey = 'app_lock_biometric';
+  static const _screenshotProtectionKey = 'screenshot_protection_enabled';
   static const _failedAttemptsKey = 'app_lock_failed_attempts';
   static const _lockdownUntilKey = 'app_lock_lockdown_until';
 
   static const int maxAttemptsBeforeLockdown = 10;
   static const int lockdownDurationSeconds = 5;
 
-  static final _storage = FlutterSecureStorage();
+  // Use the shared storage configuration to ensure compatibility
+  static const FlutterSecureStorage _storage = SecureStorageConfig.storage;
 
   static Future<void> setPin(String pin) async {
     await _storage.write(key: _pinKey, value: pin);
@@ -49,6 +52,18 @@ class AppLockService {
     await _storage.delete(key: _pinKey);
     await setLockEnabled(false);
     await setBiometricEnabled(false);
+  }
+
+  static Future<void> setScreenshotProtectionEnabled(bool enabled) async {
+    await _storage.write(
+      key: _screenshotProtectionKey,
+      value: enabled ? 'true' : 'false',
+    );
+  }
+
+  static Future<bool> isScreenshotProtectionEnabled() async {
+    final value = await _storage.read(key: _screenshotProtectionKey);
+    return value == 'true';
   }
 
   /// Get current failed attempts count

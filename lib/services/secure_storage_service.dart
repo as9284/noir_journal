@@ -4,14 +4,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/diary_entry.dart';
 import 'encryption_service.dart';
+import '../utils/secure_storage_config.dart';
 
 class SecureStorageService {
-  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock_this_device,
-    ),
-  );
+  // Use the shared storage configuration to ensure compatibility
+  static const FlutterSecureStorage _secureStorage =
+      SecureStorageConfig.storage;
   static const String _deviceKeyKey = 'device_encryption_key';
   static const String _entriesKey = 'encrypted_diary_entries';
   static const String _migrationKey = 'encryption_migration_done';

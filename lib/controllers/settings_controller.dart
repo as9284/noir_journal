@@ -9,7 +9,7 @@ import '../utils/data_operation_dialogs.dart';
 import '../utils/password_dialog.dart';
 import '../utils/dialog_utils.dart';
 import '../main.dart';
-import '../widgets/pin_lock_screen.dart';
+import '../widgets/pin_setup_screen.dart';
 import '../services/data_export_import_service.dart';
 import '../services/secure_storage_service.dart';
 import '../theme/app_theme.dart';
@@ -19,6 +19,7 @@ class SettingsController extends ChangeNotifier {
   String _version = '';
   bool _lockEnabled = false;
   bool _biometricEnabled = false;
+  bool _screenshotProtectionEnabled = false;
   bool _isLoading = true;
   AppColorTheme _selectedColorTheme = AppColorTheme.noir;
 
@@ -26,10 +27,27 @@ class SettingsController extends ChangeNotifier {
   String get version => _version;
   bool get lockEnabled => _lockEnabled;
   bool get biometricEnabled => _biometricEnabled;
+  bool get screenshotProtectionEnabled => _screenshotProtectionEnabled;
   bool get isLoading => _isLoading;
   AppColorTheme get selectedColorTheme => _selectedColorTheme;
   Future<void> initialize() async {
     await _loadAllSettings();
+    // Ensure the global app lock notifier stays synchronized
+    await _refreshAppLockState();
+  }
+
+  /// Refresh the app lock state to ensure UI synchronization
+  Future<void> _refreshAppLockState() async {
+    try {
+      final lockEnabled = await AppLockService.isLockEnabled();
+      if (_lockEnabled != lockEnabled) {
+        _lockEnabled = lockEnabled;
+        globalAppLockNotifier.value = lockEnabled;
+        notifyListeners();
+      }
+    } catch (e) {
+      // Handle any errors silently, don't affect the UI
+    }
   }
 
   Future<void> _loadAllSettings() async {
@@ -39,6 +57,8 @@ class SettingsController extends ChangeNotifier {
       final isDark = prefs.getBool('isDarkTheme') ?? false;
       final lockEnabled = await AppLockService.isLockEnabled();
       final biometricEnabled = await AppLockService.isBiometricEnabled();
+      final screenshotProtectionEnabled =
+          await AppLockService.isScreenshotProtectionEnabled();
       final colorThemeString = prefs.getString('selectedColorTheme') ?? 'noir';
 
       // Parse the saved color theme
@@ -52,13 +72,16 @@ class SettingsController extends ChangeNotifier {
         // If parsing fails, use default
         selectedTheme = AppColorTheme.noir;
       }
-
       _version = packageInfo.version;
       _isDarkTheme = isDark;
       _lockEnabled = lockEnabled;
       _biometricEnabled = biometricEnabled;
+      _screenshotProtectionEnabled = screenshotProtectionEnabled;
       _selectedColorTheme = selectedTheme;
       _isLoading = false;
+
+      // Ensure the global app lock notifier is synchronized
+      globalAppLockNotifier.value = lockEnabled;
 
       notifyListeners();
     } catch (e) {
@@ -71,6 +94,8 @@ class SettingsController extends ChangeNotifier {
     bool value,
     ValueNotifier<ThemeData> themeNotifier,
   ) async {
+    // Theme changes should not require app lock authentication
+    // as they are cosmetic changes and not sensitive operations
     _isDarkTheme = value;
     notifyListeners();
 
@@ -88,6 +113,8 @@ class SettingsController extends ChangeNotifier {
     AppColorTheme colorTheme,
     ValueNotifier<ThemeData> themeNotifier,
   ) async {
+    // Color theme changes should not require app lock authentication
+    // as they are cosmetic changes and not sensitive operations
     _selectedColorTheme = colorTheme;
     notifyListeners();
 
@@ -103,22 +130,18 @@ class SettingsController extends ChangeNotifier {
 
   Future<bool> enableAppLock(BuildContext context) async {
     if (!context.mounted) return false;
-
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder:
-            (_) => PinLockScreen(
-              registerMode: true,
+            (_) => PinSetupScreen(
               onRegister: (pin) async {
                 await AppLockService.setPin(pin);
               },
             ),
       ),
     );
-
     if (result == true) {
-      globalAppLockNotifier.value = true;
       _lockEnabled = true;
       notifyListeners();
 
@@ -137,32 +160,20 @@ class SettingsController extends ChangeNotifier {
   Future<bool> disableAppLock(BuildContext context) async {
     if (!context.mounted) return false;
 
-    final storedPin = await AppLockService.getPin();
-    final allowBiometric = await AppLockService.isBiometricEnabled();
+    final success =
+        await AppLockManager.requireAuthenticationForSensitiveOperation(
+          context,
+          'disable app lock',
+        );
 
-    if (!context.mounted) return false;
-
-    AppLockManager.isLockScreenVisible = true;
-    final unlocked = await Navigator.of(context).push(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder:
-            (_) => PinLockScreen(
-              onVerify: (input) async => input == storedPin,
-              allowBiometric: allowBiometric,
-            ),
-      ),
-    );
-    AppLockManager.isLockScreenVisible = false;
-
-    if (unlocked == true) {
+    if (success) {
       await AppLockService.clearPin();
       await AppLockService.setBiometricEnabled(false);
       _lockEnabled = false;
       _biometricEnabled = false;
       globalAppLockNotifier.value = false;
       notifyListeners();
-      // Fix: After disabling AppLock, navigate to home to avoid blank screen
+
       if (context.mounted) {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
@@ -229,18 +240,16 @@ class SettingsController extends ChangeNotifier {
             actions: [
               TextButton(
                 onPressed: () async {
-                  // Store the navigator and context references before async operations
                   final navigator = Navigator.of(dialogContext);
                   final originalContext = context;
 
-                  // Pop the dialog first
                   navigator.pop();
 
-                  // Perform async operations
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('intro_seen', true);
 
-                  // Check if original context is still mounted before restart
+                  globalAppLockNotifier.value = true;
+
                   if (originalContext.mounted) {
                     RestartWidget.restartApp(originalContext);
                   }
@@ -256,11 +265,16 @@ class SettingsController extends ChangeNotifier {
     try {
       if (!context.mounted) return;
 
-      // Check app lock before allowing export
       if (globalAppLockNotifier.value) {
-        final canProceed = await AppLockManager.checkAndUnlock(context);
+        final canProceed =
+            await AppLockManager.requireAuthenticationForDataOperation(
+              context,
+              'export data',
+            );
         if (!canProceed || !context.mounted) return;
       }
+
+      globalFileOperationInProgress.value = true;
 
       DataOperationDialogs.showLoadingDialog(
         context,
@@ -282,7 +296,6 @@ class SettingsController extends ChangeNotifier {
       }
 
       if (!context.mounted) return;
-
       await DataOperationDialogs.showResultDialog(
         context,
         success: result.success,
@@ -303,20 +316,31 @@ class SettingsController extends ChangeNotifier {
         title: 'Export Error',
         message: 'An unexpected error occurred: ${e.toString()}',
       );
+    } finally {
+      // Reset flag when export operation is complete
+      globalFileOperationInProgress.value = false;
     }
   }
 
   Future<void> importData(BuildContext context) async {
-    // Check app lock before allowing import
     if (globalAppLockNotifier.value) {
-      final canProceed = await AppLockManager.checkAndUnlock(context);
+      final canProceed =
+          await AppLockManager.requireAuthenticationForDataOperation(
+            context,
+            'import data',
+          );
       if (!canProceed || !context.mounted) return;
     }
 
+    globalFileOperationInProgress.value = true;
     final confirmed = await DataOperationDialogs.showImportConfirmation(
       context,
     );
-    if (!confirmed) return;
+    if (!confirmed) {
+      // Reset flag if user cancels
+      globalFileOperationInProgress.value = false;
+      return;
+    }
 
     try {
       if (!context.mounted) return;
@@ -409,18 +433,23 @@ class SettingsController extends ChangeNotifier {
       if (!context.mounted) return;
 
       DataOperationDialogs.hideLoadingDialog(context);
-
       await DataOperationDialogs.showResultDialog(
         context,
         success: false,
         title: 'Import Error',
         message: 'An unexpected error occurred: ${e.toString()}',
       );
+    } finally {
+      // Reset flag when import operation is complete
+      globalFileOperationInProgress.value = false;
     }
   }
 
   Future<void> deleteAllData(BuildContext context) async {
     if (!context.mounted) return;
+
+    // Set flag to prevent app lock during delete operation
+    globalFileOperationInProgress.value = true;
 
     // Show loading dialog and store the navigator reference
     final navigator = Navigator.of(context);
@@ -446,15 +475,20 @@ class SettingsController extends ChangeNotifier {
 
     try {
       // Clear all encrypted diary entries
-      await SecureStorageService.clearAllData();
-
-      // Reset app settings to defaults (keep theme preferences but clear data)
+      await SecureStorageService.clearAllData(); // Reset app settings to defaults (keep theme preferences but clear data)
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('has_password');
       await prefs.remove('password_hash');
       await prefs.remove('salt');
       await prefs.remove('biometric_enabled');
       await prefs.remove('lock_enabled');
+
+      // Clear app lock settings and update global notifier
+      await AppLockService.clearPin();
+      _lockEnabled = false;
+      _biometricEnabled = false;
+      globalAppLockNotifier.value = false;
+      notifyListeners();
 
       // Clear any other app-specific data
       final keys =
@@ -502,13 +536,42 @@ class SettingsController extends ChangeNotifier {
       await Future.delayed(const Duration(milliseconds: 200));
 
       if (!context.mounted) return;
-
       await DataOperationDialogs.showResultDialog(
         context,
         success: false,
         title: 'Delete Failed',
         message: 'Failed to delete data: ${e.toString()}',
       );
+    } finally {
+      // Reset flag when delete operation is complete
+      globalFileOperationInProgress.value = false;
     }
+  }
+
+  Future<void> toggleScreenshotProtection(
+    BuildContext context,
+    bool value,
+  ) async {
+    // Only require authentication if app lock is enabled
+    // The setting itself should always be visible and toggleable
+    if (_lockEnabled) {
+      final canProceed =
+          await AppLockManager.requireAuthenticationForSensitiveOperation(
+            context,
+            value
+                ? 'enable screenshot protection'
+                : 'disable screenshot protection',
+          );
+      if (!canProceed) return;
+    }
+
+    await AppLockService.setScreenshotProtectionEnabled(value);
+    _screenshotProtectionEnabled = value;
+    // Update the global notifier so the UI updates immediately
+    if (globalScreenshotProtectionNotifier.value != value) {
+      globalScreenshotProtectionNotifier.value = value;
+    }
+
+    notifyListeners();
   }
 }

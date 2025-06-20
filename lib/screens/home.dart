@@ -9,6 +9,7 @@ import 'package:noir_journal/widgets/diary_entry_grouped_list.dart';
 import '../constants/ui_constants.dart';
 import 'package:noir_journal/widgets/app_drawer.dart';
 import '../utils/dialog_utils.dart';
+import '../utils/app_lock_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -146,6 +147,24 @@ class _HomePageState extends State<HomePage> {
     // This ensures we get any newly imported entries
     if (mounted) {
       await _loadEntries();
+      // Refresh app lock state to ensure synchronization
+      await _refreshAppLockState();
+    }
+  }
+
+  /// Refresh the app lock state to ensure synchronization
+  Future<void> _refreshAppLockState() async {
+    try {
+      // Don't refresh app lock state if a file operation is in progress
+      // This prevents unwanted lock triggers after operations like import/export/wipe
+      if (globalFileOperationInProgress.value) {
+        return;
+      }
+
+      final lockEnabled = await AppLockService.isLockEnabled();
+      globalAppLockNotifier.value = lockEnabled;
+    } catch (e) {
+      // Silently handle refresh errors
     }
   }
 

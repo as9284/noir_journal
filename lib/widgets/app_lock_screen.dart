@@ -4,48 +4,52 @@ import 'dart:io';
 import 'package:local_auth/local_auth.dart';
 import '../utils/app_lock_service.dart';
 
-class PinLockScreen extends StatefulWidget {
-  final Future<bool> Function(String pin)? onVerify;
-  final bool allowBiometric;
-  final VoidCallback? onBiometric;
-  final bool registerMode;
-  final Future<void> Function(String pin)? onRegister;
+enum AppLockAction { unlock, cancel }
 
-  const PinLockScreen({
+typedef AppLockCallback = Future<bool> Function();
+typedef CancelCallback = Future<void> Function();
+
+class AppLockScreen extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final bool showCancelButton;
+  final String cancelButtonText;
+  final AppLockCallback? onCancel;
+  final bool allowBiometric;
+
+  const AppLockScreen({
     super.key,
-    this.onVerify,
+    this.title = 'App Locked',
+    this.subtitle = 'Enter your PIN to continue',
+    this.showCancelButton = false,
+    this.cancelButtonText = 'Cancel',
+    this.onCancel,
     this.allowBiometric = false,
-    this.onBiometric,
-    this.registerMode = false,
-    this.onRegister,
   });
 
   @override
-  State<PinLockScreen> createState() => _PinLockScreenState();
+  State<AppLockScreen> createState() => _AppLockScreenState();
 }
 
-class _PinLockScreenState extends State<PinLockScreen> {
+class _AppLockScreenState extends State<AppLockScreen> {
   String _pin = '';
   String? _error;
   bool _isLoading = false;
-  String? _firstPin;
   bool _biometricAttempted = false;
   bool _isInLockdown = false;
   int _lockdownSeconds = 0;
   Timer? _lockdownTimer;
   final LocalAuthentication _localAuth = LocalAuthentication();
+
   @override
   void initState() {
     super.initState();
-    _biometricAttempted = false;
     _checkLockdownStatus();
 
-    if (widget.allowBiometric && !widget.registerMode) {
+    if (widget.allowBiometric) {
       _isLoading = true;
-      // Add a small delay to prevent immediate biometric prompt
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_biometricAttempted && !_isInLockdown) {
-          // Add a delay to let the UI settle
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted && !_biometricAttempted && !_isInLockdown) {
               _biometricAttempted = true;
@@ -53,7 +57,6 @@ class _PinLockScreenState extends State<PinLockScreen> {
             }
           });
         } else {
-          // If not using biometric, stop loading immediately
           if (mounted) {
             setState(() {
               _isLoading = false;
@@ -64,22 +67,26 @@ class _PinLockScreenState extends State<PinLockScreen> {
     }
   }
 
-  Future<void> _checkLockdownStatus() async {
-    if (!widget.registerMode) {
-      final inLockdown = await AppLockService.isInLockdown();
-      final seconds = await AppLockService.getLockdownRemainingSeconds();
+  @override
+  void dispose() {
+    _lockdownTimer?.cancel();
+    super.dispose();
+  }
 
-      if (mounted) {
-        setState(() {
-          _isInLockdown = inLockdown;
-          _lockdownSeconds = seconds;
-          if (inLockdown) {
-            _error =
-                'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
-            _startLockdownTimer();
-          }
-        });
-      }
+  Future<void> _checkLockdownStatus() async {
+    final inLockdown = await AppLockService.isInLockdown();
+    final seconds = await AppLockService.getLockdownRemainingSeconds();
+
+    if (mounted) {
+      setState(() {
+        _isInLockdown = inLockdown;
+        _lockdownSeconds = seconds;
+        if (inLockdown) {
+          _error =
+              'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
+          _startLockdownTimer();
+        }
+      });
     }
   }
 
@@ -93,6 +100,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
           timer.cancel();
           return;
         }
+
         final stillInLockdown = await AppLockService.isInLockdown();
         final remainingSeconds =
             await AppLockService.getLockdownRemainingSeconds();
@@ -105,10 +113,13 @@ class _PinLockScreenState extends State<PinLockScreen> {
             _error =
                 'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
           } else if (remainingSeconds <= 0) {
-            // Close the app when lockdown timer reaches 0
             timer.cancel();
             _lockdownTimer = null;
-            exit(0);
+            if (widget.showCancelButton) {
+              _handleCancel();
+            } else {
+              exit(0);
+            }
           } else {
             _error = null;
             timer.cancel();
@@ -141,17 +152,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
   }
 
   Future<void> _handleBiometric() async {
-    if (!mounted) return;
-
-    // Check if in lockdown before attempting biometric auth
-    if (_isInLockdown) {
-      setState(() {
-        _error =
-            'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
-        _isLoading = false;
-      });
-      return;
-    }
+    if (!mounted || _isInLockdown) return;
 
     setState(() {
       _isLoading = true;
@@ -162,8 +163,8 @@ class _PinLockScreenState extends State<PinLockScreen> {
     try {
       final canCheck = await _localAuth.canCheckBiometrics;
       final isAvailable = await _localAuth.isDeviceSupported();
+
       if (!canCheck || !isAvailable) {
-        // Don't show error for unavailable biometrics, just continue with PIN
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -171,21 +172,21 @@ class _PinLockScreenState extends State<PinLockScreen> {
         }
         return;
       }
+
       didAuthenticate = await _localAuth.authenticate(
         localizedReason: 'Please authenticate to unlock',
         options: const AuthenticationOptions(
           biometricOnly: true,
-          useErrorDialogs: false, // Don't show system error dialogs
+          useErrorDialogs: false,
           stickyAuth: false,
         ),
       );
+
       if (didAuthenticate && mounted) {
-        // Reset failed attempts on successful biometric verification
         await AppLockService.resetFailedAttempts();
-        await _animateAndPop();
+        await _animateAndPop(AppLockAction.unlock);
       }
     } catch (e) {
-      // Don't show biometric errors to user, just continue with PIN
       debugPrint('Biometric authentication failed: $e');
     } finally {
       if (mounted && !didAuthenticate) {
@@ -194,75 +195,67 @@ class _PinLockScreenState extends State<PinLockScreen> {
     }
   }
 
-  Future<void> _animateAndPop() async {
-    await Future.delayed(const Duration(milliseconds: 180));
-    if (mounted) Navigator.of(context).pop(true);
+  Future<void> _submit() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    final pin = await AppLockService.getPin();
+    final valid = _pin == pin;
+
+    if (valid) {
+      await AppLockService.resetFailedAttempts();
+      if (!mounted) return;
+      await _animateAndPop(AppLockAction.unlock);
+    } else {
+      await AppLockService.incrementFailedAttempts();
+
+      final futures = await Future.wait([
+        AppLockService.isInLockdown(),
+        AppLockService.getLockdownRemainingSeconds(),
+        AppLockService.getFailedAttempts(),
+      ]);
+
+      final inLockdown = futures[0] as bool;
+      final seconds = futures[1] as int;
+      final currentAttempts = futures[2] as int;
+      final remaining =
+          AppLockService.maxAttemptsBeforeLockdown - currentAttempts;
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isInLockdown = inLockdown;
+          _lockdownSeconds = seconds;
+
+          if (inLockdown) {
+            _error =
+                'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
+            _startLockdownTimer();
+          } else {
+            _error = 'Incorrect PIN. $remaining attempts remaining.';
+          }
+          _pin = '';
+        });
+      }
+    }
   }
 
-  Future<void> _submit() async {
-    if (widget.registerMode) {
-      if (_firstPin == null) {
-        setState(() {
-          _firstPin = _pin;
-          _pin = '';
-          _error = null;
-        });
-      } else {
-        if (_pin == _firstPin) {
-          setState(() => _isLoading = true);
-          await widget.onRegister?.call(_pin);
-          if (!mounted) return;
-          await _animateAndPop();
-        } else {
-          setState(() {
-            _error = 'PINs do not match';
-            _pin = '';
-          });
-        }
+  Future<void> _animateAndPop(AppLockAction action) async {
+    await Future.delayed(const Duration(milliseconds: 180));
+    if (mounted) Navigator.of(context).pop(action);
+  }
+
+  Future<void> _handleCancel() async {
+    if (widget.onCancel != null) {
+      final shouldProceed = await widget.onCancel!();
+      if (shouldProceed && mounted) {
+        Navigator.of(context).pop(AppLockAction.cancel);
       }
     } else {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      final valid = await widget.onVerify!(_pin);
-      if (valid) {
-        // Reset failed attempts on successful verification
-        await AppLockService.resetFailedAttempts();
-        if (!mounted) return;
-        await _animateAndPop();
-      } else {
-        // Don't show loading state for failed attempts to prevent flashing
-        // Increment failed attempts
-        await AppLockService.incrementFailedAttempts(); // Get all the updated state in parallel
-        final futures = await Future.wait([
-          AppLockService.isInLockdown(),
-          AppLockService.getLockdownRemainingSeconds(),
-          AppLockService.getFailedAttempts(),
-        ]);
-
-        final inLockdown = futures[0] as bool;
-        final seconds = futures[1] as int;
-        final currentAttempts = futures[2] as int;
-        final remaining =
-            AppLockService.maxAttemptsBeforeLockdown - currentAttempts;
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _isInLockdown = inLockdown;
-            _lockdownSeconds = seconds;
-
-            if (inLockdown) {
-              _error =
-                  'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
-              _startLockdownTimer();
-            } else {
-              _error = 'Incorrect PIN. $remaining attempts remaining.';
-            }
-            _pin = '';
-          });
-        }
+      if (mounted) {
+        Navigator.of(context).pop(AppLockAction.cancel);
       }
     }
   }
@@ -300,6 +293,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
       ['7', '8', '9'],
       ['', '0', '<'],
     ];
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children:
@@ -314,9 +308,9 @@ class _PinLockScreenState extends State<PinLockScreen> {
                         return const SizedBox(width: 70, height: 70);
                       }
                       if (key == '<') {
-                        return PinBackspaceButton(onTap: _onBackspace);
+                        return _PinBackspaceButton(onTap: _onBackspace);
                       }
-                      return PinKeyButton(
+                      return _PinKeyButton(
                         value: key,
                         onTap: () => _onKeyTap(key),
                       );
@@ -329,8 +323,6 @@ class _PinLockScreenState extends State<PinLockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isRegister = widget.registerMode;
-
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -338,107 +330,104 @@ class _PinLockScreenState extends State<PinLockScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          isRegister
-              ? (_firstPin == null ? 'Set PIN' : 'Confirm PIN')
-              : 'App Locked',
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title),
+          automaticallyImplyLeading: false,
+          centerTitle: true,
+          elevation: 0,
+          actions:
+              widget.showCancelButton
+                  ? [
+                    TextButton(
+                      onPressed: _isInLockdown ? null : _handleCancel,
+                      child: Text(widget.cancelButtonText),
+                    ),
+                  ]
+                  : null,
         ),
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Column(
-                children: [
-                  const SizedBox(height: 32),
-                  Icon(
-                    isRegister ? Icons.lock_open : Icons.lock_outline,
-                    size: 56,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    isRegister
-                        ? (_firstPin == null
-                            ? 'Enter a new 6-digit PIN'
-                            : 'Confirm your new PIN')
-                        : 'Enter your PIN',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildPinDots(),
-                  if (_error != null) ...[
-                    const SizedBox(height: 12),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.red),
-                          textAlign: TextAlign.center,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Column(
+                  children: [
+                    const SizedBox(height: 32),
+                    Icon(
+                      Icons.lock_outline,
+                      size: 56,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      widget.subtitle,
+                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildPinDots(),
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
-              ),
-              Center(child: _buildKeypad()),
-              if (!_isLoading &&
-                  widget.allowBiometric &&
-                  !widget.registerMode &&
-                  !_isInLockdown &&
-                  _biometricAttempted) ...[
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.fingerprint, size: 32),
-                  label: const Text(
-                    'Use Biometrics',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                  ),
-                  onPressed: _handleBiometric,
                 ),
+                Center(child: _buildKeypad()),
+                if (!_isLoading &&
+                    widget.allowBiometric &&
+                    !_isInLockdown &&
+                    _biometricAttempted) ...[
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.fingerprint, size: 32),
+                    label: const Text(
+                      'Use Biometrics',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                    ),
+                    onPressed: _handleBiometric,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
-
-  @override
-  void dispose() {
-    _lockdownTimer?.cancel();
-    super.dispose();
-  }
 }
 
-// PIN Button Widgets
-class PinKeyButton extends StatefulWidget {
+class _PinKeyButton extends StatefulWidget {
   final String value;
   final VoidCallback onTap;
 
-  const PinKeyButton({super.key, required this.value, required this.onTap});
+  const _PinKeyButton({required this.value, required this.onTap});
 
   @override
-  State<PinKeyButton> createState() => _PinKeyButtonState();
+  State<_PinKeyButton> createState() => _PinKeyButtonState();
 }
 
-class _PinKeyButtonState extends State<PinKeyButton> {
+class _PinKeyButtonState extends State<_PinKeyButton> {
   double _scale = 1.0;
 
   void _onTapDown(TapDownDetails _) {
@@ -486,15 +475,15 @@ class _PinKeyButtonState extends State<PinKeyButton> {
   }
 }
 
-class PinBackspaceButton extends StatefulWidget {
+class _PinBackspaceButton extends StatefulWidget {
   final VoidCallback onTap;
-  const PinBackspaceButton({super.key, required this.onTap});
+  const _PinBackspaceButton({required this.onTap});
 
   @override
-  State<PinBackspaceButton> createState() => _PinBackspaceButtonState();
+  State<_PinBackspaceButton> createState() => _PinBackspaceButtonState();
 }
 
-class _PinBackspaceButtonState extends State<PinBackspaceButton> {
+class _PinBackspaceButtonState extends State<_PinBackspaceButton> {
   double _scale = 1.0;
 
   void _onTapDown(TapDownDetails _) => setState(() => _scale = 0.95);

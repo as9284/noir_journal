@@ -156,6 +156,20 @@ class SettingsSections {
                 activeColor: theme.colorScheme.primary,
               ),
             ),
+            SettingsWidgets.buildDivider(theme),
+            SettingsWidgets.buildModernTile(
+              theme,
+              title: 'Screenshot Protection',
+              subtitle: 'Prevent screenshots and screen recording',
+              icon: Icons.screenshot_monitor,
+              trailing: Switch.adaptive(
+                value: controller.screenshotProtectionEnabled,
+                onChanged:
+                    (value) =>
+                        controller.toggleScreenshotProtection(context, value),
+                activeColor: theme.colorScheme.primary,
+              ),
+            ),
             if (controller.lockEnabled) ...[
               SettingsWidgets.buildDivider(theme),
               SettingsWidgets.buildModernTile(
@@ -297,13 +311,15 @@ class SettingsSections {
     );
   }
 
-  /// Helper function to check app lock before executing sensitive operations
   static Future<bool> _checkAppLockBeforeAction(BuildContext context) async {
     if (!globalAppLockNotifier.value) {
-      return true; // No lock enabled, proceed
+      return true;
     }
 
-    return await AppLockManager.checkAndUnlock(context);
+    return await AppLockManager.requireAuthenticationForSensitiveOperation(
+      context,
+      'continue',
+    );
   }
 }
 
