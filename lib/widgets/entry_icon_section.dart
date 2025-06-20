@@ -41,7 +41,7 @@ class EntryIconSection extends StatelessWidget {
             color: theme.cardColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: theme.colorScheme.primary.withAlpha(77),
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -63,8 +63,8 @@ class EntryIconSection extends StatelessWidget {
                   decoration: BoxDecoration(
                     color:
                         isSelected
-                            ? theme.colorScheme.primary.withAlpha(51)
-                            : theme.colorScheme.primary.withAlpha(13),
+                            ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                            : theme.colorScheme.primary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color:
@@ -80,7 +80,9 @@ class EntryIconSection extends StatelessWidget {
                     color:
                         isSelected
                             ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface.withAlpha(128),
+                            : theme.colorScheme.onSurface.withValues(
+                              alpha: 0.5,
+                            ),
                   ),
                 ),
               );

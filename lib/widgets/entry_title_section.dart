@@ -39,7 +39,7 @@ class EntryTitleSection extends StatelessWidget {
                     ? []
                     : [
                       BoxShadow(
-                        color: theme.shadowColor.withAlpha(25),
+                        color: theme.shadowColor.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -47,8 +47,8 @@ class EntryTitleSection extends StatelessWidget {
             border: Border.all(
               color:
                   isEditing
-                      ? theme.colorScheme.primary.withAlpha(77)
-                      : theme.dividerColor.withAlpha(51),
+                      ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                      : theme.colorScheme.outline.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -61,7 +61,9 @@ class EntryTitleSection extends StatelessWidget {
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.all(16),
                       hintStyle: TextStyle(
-                        color: theme.colorScheme.onSurface.withAlpha(128),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                     style: theme.textTheme.headlineSmall?.copyWith(

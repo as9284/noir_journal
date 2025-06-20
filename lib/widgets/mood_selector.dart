@@ -88,8 +88,6 @@ class _MoodSelectorState extends State<MoodSelector> {
   Widget _buildMoodChip(MoodData moodData, ThemeData theme) {
     final isSelected = widget.selectedMood == moodData.mood;
     final colorScheme = theme.colorScheme;
-    final textColor =
-        theme.brightness == Brightness.dark ? Colors.white : Colors.black;
 
     return Material(
       color: Colors.transparent,
@@ -108,16 +106,26 @@ class _MoodSelectorState extends State<MoodSelector> {
           decoration: BoxDecoration(
             color:
                 isSelected
-                    ? moodData.color.withValues(alpha: 0.2)
+                    ? moodData.color.withValues(alpha: 0.15)
                     : colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color:
                   isSelected
-                      ? moodData.color
-                      : colorScheme.outline.withValues(alpha: 0.3),
+                      ? moodData.color.withValues(alpha: 0.6)
+                      : colorScheme.outline.withValues(alpha: 0.25),
               width: isSelected ? 2 : 1,
             ),
+            boxShadow:
+                isSelected
+                    ? [
+                      BoxShadow(
+                        color: moodData.color.withValues(alpha: 0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                    : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -128,7 +136,10 @@ class _MoodSelectorState extends State<MoodSelector> {
                 moodData.name,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? textColor : colorScheme.onSurface,
+                  color:
+                      isSelected
+                          ? colorScheme.onSurface
+                          : colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -152,7 +163,6 @@ class MoodDisplay extends StatelessWidget {
     this.showLabel = true,
     this.padding,
   });
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -162,10 +172,10 @@ class MoodDisplay extends StatelessWidget {
       padding:
           padding ?? const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: moodData.color.withValues(alpha: 0.15),
+        color: moodData.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: moodData.color.withValues(alpha: 0.3),
+          color: moodData.color.withValues(alpha: 0.4),
           width: 1,
         ),
       ),
@@ -178,8 +188,8 @@ class MoodDisplay extends StatelessWidget {
             Text(
               moodData.name,
               style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
                 fontSize: size * 0.6,
               ),
             ),

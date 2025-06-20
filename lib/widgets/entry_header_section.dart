@@ -55,17 +55,20 @@ class EntryHeaderSection extends StatelessWidget {
         gradient: LinearGradient(
           colors:
               theme.brightness == Brightness.dark
-                  ? [Colors.grey[800]!, Colors.grey[850]!]
+                  ? [
+                    theme.colorScheme.surface,
+                    theme.colorScheme.surface.withValues(alpha: 0.8),
+                  ]
                   : [
-                    theme.colorScheme.primary.withAlpha(25),
-                    theme.colorScheme.primary.withAlpha(13),
+                    theme.colorScheme.primary.withValues(alpha: 0.1),
+                    theme.colorScheme.primary.withValues(alpha: 0.05),
                   ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.primary.withAlpha(51),
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -75,10 +78,10 @@ class EntryHeaderSection extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withAlpha(25),
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: theme.colorScheme.primary.withAlpha(51),
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -104,7 +107,7 @@ class EntryHeaderSection extends StatelessWidget {
                 Text(
                   dateString,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withAlpha(179),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],

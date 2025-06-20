@@ -38,7 +38,7 @@ class EntryMoodSection extends StatelessWidget {
             color: theme.cardColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: theme.colorScheme.primary.withAlpha(77),
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
               width: 1,
             ),
           ),

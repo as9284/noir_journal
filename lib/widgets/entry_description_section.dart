@@ -46,13 +46,13 @@ class EntryDescriptionSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.shadowColor.withAlpha(25),
+                    color: theme.shadowColor.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ],
                 border: Border.all(
-                  color: theme.dividerColor.withAlpha(51),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),
@@ -66,7 +66,9 @@ class EntryDescriptionSection extends StatelessWidget {
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color:
                           descriptionController.text.isEmpty
-                              ? theme.colorScheme.onSurface.withAlpha(128)
+                              ? theme.colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              )
                               : theme.colorScheme.onSurface,
                       fontStyle:
                           descriptionController.text.isEmpty

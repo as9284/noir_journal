@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
-import 'package:noir_journal/widgets/mood_selector.dart';
+import 'package:noir_journal/models/mood.dart';
 
 class DiaryEntryCard extends StatelessWidget {
   final DiaryEntry entry;
@@ -51,13 +51,15 @@ class DiaryEntryCard extends StatelessWidget {
         );
       }
     }
-
     return Container(
       decoration:
           selected
               ? BoxDecoration(
-                color: theme.colorScheme.primary.withAlpha(25),
-                border: Border.all(color: theme.colorScheme.primary, width: 2),
+                color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  width: 2,
+                ),
                 borderRadius: borderRadius,
               )
               : null,
@@ -85,15 +87,15 @@ class DiaryEntryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color:
               selected
-                  ? theme.colorScheme.primary.withAlpha(25)
-                  : theme.cardColor,
+                  ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                  : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow:
               selected
                   ? []
                   : [
                     BoxShadow(
-                      color: theme.shadowColor.withAlpha(25),
+                      color: theme.shadowColor.withValues(alpha: 0.08),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -101,8 +103,8 @@ class DiaryEntryCard extends StatelessWidget {
           border: Border.all(
             color:
                 selected
-                    ? theme.colorScheme.primary
-                    : theme.dividerColor.withAlpha(51),
+                    ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                    : theme.colorScheme.outline.withValues(alpha: 0.15),
             width: selected ? 2 : 1,
           ),
         ),
@@ -128,68 +130,127 @@ class DiaryEntryCard extends StatelessWidget {
   Widget _buildCardContent(ThemeData theme) {
     return Row(
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color:
-                selected
-                    ? theme.colorScheme.primary.withAlpha(51)
-                    : theme.colorScheme.primary.withAlpha(25),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(entry.icon, size: 24, color: theme.colorScheme.primary),
+        // Icon container with mood indicator
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                entry.icon,
+                size: 24,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            // Mood emoji positioned at top-right corner of icon
+            if (entry.mood != null)
+              Positioned(
+                top: -4,
+                right: -4,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      MoodHelper.getMoodData(entry.mood!).emoji,
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      entry.title,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (entry.mood != null) ...[
-                    const SizedBox(width: 8),
-                    MoodDisplay(
-                      mood: entry.mood!,
-                      size: 16,
-                      showLabel: false,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                    ),
-                  ],
-                ],
+              Text(
+                entry.title,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               if (entry.description.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
                   entry.description,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withAlpha(153),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              const SizedBox(height: 4),
-              Text(
-                _formatTime(entry.createdAt),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withAlpha(102),
-                  fontSize: 12,
-                ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Text(
+                    _formatTime(entry.createdAt),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (entry.mood != null) ...[
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MoodHelper.getMoodData(
+                          entry.mood!,
+                        ).color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: MoodHelper.getMoodData(
+                            entry.mood!,
+                          ).color.withValues(alpha: 0.3),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        MoodHelper.getMoodData(entry.mood!).name,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.8,
+                          ),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -211,7 +272,7 @@ class DiaryEntryCard extends StatelessWidget {
         else
           Icon(
             Icons.chevron_right,
-            color: theme.colorScheme.onSurface.withAlpha(102),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             size: 20,
           ),
       ],
