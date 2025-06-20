@@ -27,10 +27,11 @@ Future<void> main() async {
 
   // Initialize secure encryption
   await EncryptionService.migrateToSecureEncryption();
-
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('isDarkTheme') ?? false;
   final colorThemeString = prefs.getString('selectedColorTheme') ?? 'noir';
+  final fontFamilyString =
+      prefs.getString('selectedFontFamily') ?? 'defaultFont';
 
   AppColorTheme selectedTheme = AppColorTheme.noir;
   try {
@@ -41,9 +42,22 @@ Future<void> main() async {
   } catch (e) {
     selectedTheme = AppColorTheme.noir;
   }
+  AppFontFamily selectedFontFamily = AppFontFamily.inter;
+  try {
+    selectedFontFamily = AppFontFamily.values.firstWhere(
+      (font) => font.name == fontFamilyString,
+      orElse: () => AppFontFamily.inter,
+    );
+  } catch (e) {
+    selectedFontFamily = AppFontFamily.inter;
+  }
 
   globalThemeNotifier = ValueNotifier(
-    getThemeData(colorTheme: selectedTheme, isDark: isDark),
+    getThemeData(
+      colorTheme: selectedTheme,
+      isDark: isDark,
+      fontFamily: selectedFontFamily,
+    ),
   );
 
   runApp(RestartWidget(child: MainApp(themeNotifier: globalThemeNotifier!)));

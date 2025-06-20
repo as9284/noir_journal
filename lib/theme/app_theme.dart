@@ -1,5 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// Available font families for the journal app
+enum AppFontFamily { inter, roboto, opensans, lato, sourcesans, nunito }
+
+// Font family data
+class FontFamilyData {
+  final String name;
+  final String fontFamily;
+  final String description;
+
+  const FontFamilyData({
+    required this.name,
+    required this.fontFamily,
+    required this.description,
+  });
+}
+
+// Available fonts with their data
+const Map<AppFontFamily, FontFamilyData> appFonts = {
+  AppFontFamily.inter: FontFamilyData(
+    name: 'Inter',
+    fontFamily: 'inter',
+    description: 'Modern and highly readable font',
+  ),
+  AppFontFamily.roboto: FontFamilyData(
+    name: 'Roboto',
+    fontFamily: 'roboto',
+    description: 'Clean and friendly geometric sans-serif',
+  ),
+  AppFontFamily.opensans: FontFamilyData(
+    name: 'Open Sans',
+    fontFamily: 'opensans',
+    description: 'Humanist sans-serif optimized for legibility',
+  ),
+  AppFontFamily.lato: FontFamilyData(
+    name: 'Lato',
+    fontFamily: 'lato',
+    description: 'Semi-rounded humanist sans-serif',
+  ),
+  AppFontFamily.sourcesans: FontFamilyData(
+    name: 'Source Sans Pro',
+    fontFamily: 'sourcesans',
+    description: 'Clean and professional sans-serif',
+  ),
+  AppFontFamily.nunito: FontFamilyData(
+    name: 'Nunito',
+    fontFamily: 'nunito',
+    description: 'Well-balanced and readable rounded sans-serif',
+  ),
+};
 
 // Entry card colors that adapt to themes
 Color getEntryCardColor(BuildContext context) {
@@ -147,21 +198,47 @@ final Map<AppColorTheme, ColorThemeData> colorThemes = {
   ),
 };
 
+// Helper function to get font family string
+String? _getFontFamily(dynamic fontFamily) {
+  if (fontFamily == null) return GoogleFonts.inter().fontFamily;
+
+  if (fontFamily is AppFontFamily) {
+    switch (fontFamily) {
+      case AppFontFamily.inter:
+        return GoogleFonts.inter().fontFamily;
+      case AppFontFamily.roboto:
+        return GoogleFonts.roboto().fontFamily;
+      case AppFontFamily.opensans:
+        return GoogleFonts.openSans().fontFamily;
+      case AppFontFamily.lato:
+        return GoogleFonts.lato().fontFamily;
+      case AppFontFamily.sourcesans:
+        return GoogleFonts.sourceSans3().fontFamily;
+      case AppFontFamily.nunito:
+        return GoogleFonts.nunito().fontFamily;
+    }
+  }
+
+  return GoogleFonts.inter().fontFamily; // Default to Inter
+}
+
 // Function to get theme data based on color theme and brightness
 ThemeData getThemeData({
   required AppColorTheme colorTheme,
   required bool isDark,
+  dynamic fontFamily,
 }) {
   final colorData = colorThemes[colorTheme]!;
 
   if (isDark) {
-    return _buildDarkTheme(colorData);
+    return _buildDarkTheme(colorData, fontFamily);
   } else {
-    return _buildLightTheme(colorData);
+    return _buildLightTheme(colorData, fontFamily);
   }
 }
 
-ThemeData _buildLightTheme(ColorThemeData colorData) {
+ThemeData _buildLightTheme(ColorThemeData colorData, [dynamic fontFamily]) {
+  final selectedFontFamily = _getFontFamily(fontFamily);
   final colorScheme = ColorScheme.light(
     primary: colorData.lightPrimary,
     onPrimary: colorData.lightSecondary,
@@ -188,6 +265,7 @@ ThemeData _buildLightTheme(ColorThemeData colorData) {
         color: colorData.lightPrimary,
         fontSize: 20,
         fontWeight: FontWeight.bold,
+        fontFamily: selectedFontFamily,
       ),
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -196,25 +274,45 @@ ThemeData _buildLightTheme(ColorThemeData colorData) {
       ),
     ),
     textTheme: TextTheme(
-      bodyLarge: TextStyle(color: colorData.lightPrimary, fontSize: 16),
+      bodyLarge: TextStyle(
+        color: colorData.lightPrimary,
+        fontSize: 16,
+        fontFamily: selectedFontFamily,
+      ),
       bodyMedium: TextStyle(
         color: colorData.lightPrimary.withValues(alpha: 0.87),
         fontSize: 14,
+        fontFamily: selectedFontFamily,
       ),
       bodySmall: TextStyle(
         color: colorData.lightPrimary.withValues(alpha: 0.6),
         fontSize: 12,
+        fontFamily: selectedFontFamily,
       ),
       titleLarge: TextStyle(
         color: colorData.lightPrimary,
         fontWeight: FontWeight.bold,
+        fontFamily: selectedFontFamily,
+      ),
+      headlineSmall: TextStyle(
+        color: colorData.lightPrimary,
+        fontWeight: FontWeight.bold,
+        fontFamily: selectedFontFamily,
+      ),
+      titleMedium: TextStyle(
+        color: colorData.lightPrimary,
+        fontWeight: FontWeight.w600,
+        fontFamily: selectedFontFamily,
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: colorData.lightPrimary,
         foregroundColor: colorData.lightSecondary,
-        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+        textStyle: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontFamily: selectedFontFamily,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -223,7 +321,10 @@ ThemeData _buildLightTheme(ColorThemeData colorData) {
       style: TextButton.styleFrom(
         foregroundColor: colorData.lightPrimary,
         backgroundColor: Colors.transparent,
-        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        textStyle: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontFamily: selectedFontFamily,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -233,7 +334,10 @@ ThemeData _buildLightTheme(ColorThemeData colorData) {
         foregroundColor: colorData.lightPrimary,
         backgroundColor: Colors.transparent,
         side: BorderSide(color: colorData.lightPrimary, width: 1.5),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        textStyle: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontFamily: selectedFontFamily,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -249,10 +353,12 @@ ThemeData _buildLightTheme(ColorThemeData colorData) {
         color: colorData.lightPrimary,
         fontSize: 20,
         fontWeight: FontWeight.bold,
+        fontFamily: selectedFontFamily,
       ),
       contentTextStyle: TextStyle(
         color: colorData.lightPrimary.withValues(alpha: 0.87),
         fontSize: 16,
+        fontFamily: selectedFontFamily,
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       insetPadding: const EdgeInsets.symmetric(
@@ -263,7 +369,8 @@ ThemeData _buildLightTheme(ColorThemeData colorData) {
   );
 }
 
-ThemeData _buildDarkTheme(ColorThemeData colorData) {
+ThemeData _buildDarkTheme(ColorThemeData colorData, [dynamic fontFamily]) {
+  final selectedFontFamily = _getFontFamily(fontFamily);
   final colorScheme = ColorScheme.dark(
     primary: colorData.darkPrimary,
     onPrimary: colorData.darkSecondary,
@@ -290,6 +397,7 @@ ThemeData _buildDarkTheme(ColorThemeData colorData) {
         color: colorData.darkPrimary,
         fontSize: 20,
         fontWeight: FontWeight.bold,
+        fontFamily: selectedFontFamily,
       ),
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -298,25 +406,45 @@ ThemeData _buildDarkTheme(ColorThemeData colorData) {
       ),
     ),
     textTheme: TextTheme(
-      bodyLarge: TextStyle(color: colorData.darkPrimary, fontSize: 16),
+      bodyLarge: TextStyle(
+        color: colorData.darkPrimary,
+        fontSize: 16,
+        fontFamily: selectedFontFamily,
+      ),
       bodyMedium: TextStyle(
         color: colorData.darkPrimary.withValues(alpha: 0.87),
         fontSize: 14,
+        fontFamily: selectedFontFamily,
       ),
       bodySmall: TextStyle(
         color: colorData.darkPrimary.withValues(alpha: 0.6),
         fontSize: 12,
+        fontFamily: selectedFontFamily,
       ),
       titleLarge: TextStyle(
         color: colorData.darkPrimary,
         fontWeight: FontWeight.bold,
+        fontFamily: selectedFontFamily,
+      ),
+      headlineSmall: TextStyle(
+        color: colorData.darkPrimary,
+        fontWeight: FontWeight.bold,
+        fontFamily: selectedFontFamily,
+      ),
+      titleMedium: TextStyle(
+        color: colorData.darkPrimary,
+        fontWeight: FontWeight.w600,
+        fontFamily: selectedFontFamily,
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: colorData.darkPrimary,
         foregroundColor: colorData.darkSecondary,
-        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+        textStyle: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontFamily: selectedFontFamily,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -325,7 +453,10 @@ ThemeData _buildDarkTheme(ColorThemeData colorData) {
       style: TextButton.styleFrom(
         foregroundColor: colorData.darkPrimary,
         backgroundColor: Colors.transparent,
-        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        textStyle: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontFamily: selectedFontFamily,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -335,7 +466,10 @@ ThemeData _buildDarkTheme(ColorThemeData colorData) {
         foregroundColor: colorData.darkPrimary,
         backgroundColor: Colors.transparent,
         side: BorderSide(color: colorData.darkPrimary, width: 1.5),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        textStyle: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontFamily: selectedFontFamily,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -351,10 +485,12 @@ ThemeData _buildDarkTheme(ColorThemeData colorData) {
         color: colorData.darkPrimary,
         fontSize: 20,
         fontWeight: FontWeight.bold,
+        fontFamily: selectedFontFamily,
       ),
       contentTextStyle: TextStyle(
         color: colorData.darkPrimary.withValues(alpha: 0.87),
         fontSize: 16,
+        fontFamily: selectedFontFamily,
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       insetPadding: const EdgeInsets.symmetric(

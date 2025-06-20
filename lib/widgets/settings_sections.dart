@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/settings_widgets.dart';
 import '../theme/app_theme.dart';
@@ -12,6 +13,11 @@ class SettingsSections {
     SettingsController controller,
     ValueNotifier<ThemeData> themeNotifier,
   ) {
+    // Safety check to prevent null errors during initialization
+    if (controller.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -40,6 +46,17 @@ class SettingsSections {
               onTap:
                   () =>
                       _showColorThemeDialog(context, controller, themeNotifier),
+            ),
+            SettingsWidgets.buildDivider(theme),
+            SettingsWidgets.buildModernTile(
+              theme,
+              title: 'Font Family',
+              subtitle:
+                  appFonts[controller.selectedFontFamily]?.name ?? 'Inter',
+              icon: Icons.font_download,
+              onTap:
+                  () =>
+                      _showFontFamilyDialog(context, controller, themeNotifier),
             ),
           ],
         ),
@@ -102,6 +119,98 @@ class SettingsSections {
                     title: Text(colorData.name),
                     onTap: () {
                       controller.changeColorTheme(colorTheme, themeNotifier);
+                      Navigator.of(context).pop();
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  static void _showFontFamilyDialog(
+    BuildContext context,
+    SettingsController controller,
+    ValueNotifier<ThemeData> themeNotifier,
+  ) async {
+    // Check app lock before showing dialog
+    final canProceed = await _checkAppLockBeforeAction(context);
+    if (!canProceed || !context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Choose Font Family'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: AppFontFamily.values.length,
+                itemBuilder: (context, index) {
+                  final fontFamily = AppFontFamily.values[index];
+                  final fontData = appFonts[fontFamily];
+                  if (fontData == null) return const SizedBox.shrink();
+
+                  final isSelected =
+                      controller.selectedFontFamily == fontFamily;
+
+                  return ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            isSelected
+                                ? Border.all(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 3,
+                                )
+                                : Border.all(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
+                      ),
+                      child: Center(
+                        child:
+                            isSelected
+                                ? Icon(
+                                  Icons.check,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                )
+                                : Text(
+                                  'Aa',
+                                  style: _getFontPreviewStyle(
+                                    fontFamily,
+                                    context,
+                                  ),
+                                ),
+                      ),
+                    ),
+                    title: Text(
+                      fontData.name,
+                      style: _getFontTitleStyle(fontFamily, context),
+                    ),
+                    subtitle: Text(
+                      fontData.description,
+                      style: _getFontSubtitleStyle(fontFamily, context),
+                    ),
+                    onTap: () {
+                      controller.changeFontFamily(fontFamily, themeNotifier);
                       Navigator.of(context).pop();
                     },
                   );
@@ -320,6 +429,95 @@ class SettingsSections {
       context,
       'continue',
     );
+  } // Helper function to get font family for preview
+
+  static TextStyle _getFontPreviewStyle(
+    AppFontFamily fontFamily,
+    BuildContext context,
+  ) {
+    final baseStyle = TextStyle(
+      fontWeight: FontWeight.bold,
+      color: Theme.of(context).colorScheme.primary,
+      fontSize: 16,
+    );
+
+    try {
+      switch (fontFamily) {
+        case AppFontFamily.inter:
+          return GoogleFonts.inter(textStyle: baseStyle);
+        case AppFontFamily.roboto:
+          return GoogleFonts.roboto(textStyle: baseStyle);
+        case AppFontFamily.opensans:
+          return GoogleFonts.openSans(textStyle: baseStyle);
+        case AppFontFamily.lato:
+          return GoogleFonts.lato(textStyle: baseStyle);
+        case AppFontFamily.sourcesans:
+          return GoogleFonts.sourceSans3(textStyle: baseStyle);
+        case AppFontFamily.nunito:
+          return GoogleFonts.nunito(textStyle: baseStyle);
+      }
+    } catch (e) {
+      // Fallback to base style if Google Fonts fails to load
+      return baseStyle;
+    }
+  }
+
+  // Helper function to get font family text style for list items
+  static TextStyle _getFontTitleStyle(
+    AppFontFamily fontFamily,
+    BuildContext context,
+  ) {
+    final baseStyle = Theme.of(context).textTheme.titleMedium!;
+
+    try {
+      switch (fontFamily) {
+        case AppFontFamily.inter:
+          return GoogleFonts.inter(textStyle: baseStyle);
+        case AppFontFamily.roboto:
+          return GoogleFonts.roboto(textStyle: baseStyle);
+        case AppFontFamily.opensans:
+          return GoogleFonts.openSans(textStyle: baseStyle);
+        case AppFontFamily.lato:
+          return GoogleFonts.lato(textStyle: baseStyle);
+        case AppFontFamily.sourcesans:
+          return GoogleFonts.sourceSans3(textStyle: baseStyle);
+        case AppFontFamily.nunito:
+          return GoogleFonts.nunito(textStyle: baseStyle);
+      }
+    } catch (e) {
+      // Fallback to base style if Google Fonts fails to load
+      return baseStyle;
+    }
+  }
+
+  // Helper function to get font family text style for subtitles
+  static TextStyle _getFontSubtitleStyle(
+    AppFontFamily fontFamily,
+    BuildContext context,
+  ) {
+    final baseStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall!.copyWith(fontSize: 12);
+
+    try {
+      switch (fontFamily) {
+        case AppFontFamily.inter:
+          return GoogleFonts.inter(textStyle: baseStyle);
+        case AppFontFamily.roboto:
+          return GoogleFonts.roboto(textStyle: baseStyle);
+        case AppFontFamily.opensans:
+          return GoogleFonts.openSans(textStyle: baseStyle);
+        case AppFontFamily.lato:
+          return GoogleFonts.lato(textStyle: baseStyle);
+        case AppFontFamily.sourcesans:
+          return GoogleFonts.sourceSans3(textStyle: baseStyle);
+        case AppFontFamily.nunito:
+          return GoogleFonts.nunito(textStyle: baseStyle);
+      }
+    } catch (e) {
+      // Fallback to base style if Google Fonts fails to load
+      return baseStyle;
+    }
   }
 }
 

@@ -22,6 +22,7 @@ class SettingsController extends ChangeNotifier {
   bool _screenshotProtectionEnabled = false;
   bool _isLoading = true;
   AppColorTheme _selectedColorTheme = AppColorTheme.noir;
+  AppFontFamily _selectedFontFamily = AppFontFamily.inter;
 
   bool get isDarkTheme => _isDarkTheme;
   String get version => _version;
@@ -30,6 +31,7 @@ class SettingsController extends ChangeNotifier {
   bool get screenshotProtectionEnabled => _screenshotProtectionEnabled;
   bool get isLoading => _isLoading;
   AppColorTheme get selectedColorTheme => _selectedColorTheme;
+  AppFontFamily get selectedFontFamily => _selectedFontFamily;
   Future<void> initialize() async {
     await _loadAllSettings();
     // Ensure the global app lock notifier stays synchronized
@@ -60,6 +62,7 @@ class SettingsController extends ChangeNotifier {
       final screenshotProtectionEnabled =
           await AppLockService.isScreenshotProtectionEnabled();
       final colorThemeString = prefs.getString('selectedColorTheme') ?? 'noir';
+      final fontFamilyString = prefs.getString('selectedFontFamily') ?? 'inter';
 
       // Parse the saved color theme
       AppColorTheme selectedTheme = AppColorTheme.noir;
@@ -71,13 +74,25 @@ class SettingsController extends ChangeNotifier {
       } catch (e) {
         // If parsing fails, use default
         selectedTheme = AppColorTheme.noir;
+      } // Parse the saved font family
+      AppFontFamily selectedFontFamily = AppFontFamily.inter;
+      try {
+        selectedFontFamily = AppFontFamily.values.firstWhere(
+          (font) => font.name == fontFamilyString,
+          orElse: () => AppFontFamily.inter,
+        );
+      } catch (e) {
+        // If parsing fails, use default
+        selectedFontFamily = AppFontFamily.inter;
       }
+
       _version = packageInfo.version;
       _isDarkTheme = isDark;
       _lockEnabled = lockEnabled;
       _biometricEnabled = biometricEnabled;
       _screenshotProtectionEnabled = screenshotProtectionEnabled;
       _selectedColorTheme = selectedTheme;
+      _selectedFontFamily = selectedFontFamily;
       _isLoading = false;
 
       // Ensure the global app lock notifier is synchronized
@@ -100,12 +115,14 @@ class SettingsController extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkTheme', value);
-
-    // Update the theme with the current color theme
+    await prefs.setBool(
+      'isDarkTheme',
+      value,
+    ); // Update the theme with the current color theme
     themeNotifier.value = getThemeData(
       colorTheme: _selectedColorTheme,
       isDark: value,
+      fontFamily: _selectedFontFamily,
     );
   }
 
@@ -119,12 +136,34 @@ class SettingsController extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selectedColorTheme', colorTheme.name);
-
-    // Update the theme with the new color theme
+    await prefs.setString(
+      'selectedColorTheme',
+      colorTheme.name,
+    ); // Update the theme with the new color theme
     themeNotifier.value = getThemeData(
       colorTheme: colorTheme,
       isDark: _isDarkTheme,
+      fontFamily: _selectedFontFamily,
+    );
+  }
+
+  Future<void> changeFontFamily(
+    AppFontFamily fontFamily,
+    ValueNotifier<ThemeData> themeNotifier,
+  ) async {
+    // Font family changes should not require app lock authentication
+    // as they are cosmetic changes and not sensitive operations
+    _selectedFontFamily = fontFamily;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedFontFamily', fontFamily.name);
+
+    // Update the theme with the new font family
+    themeNotifier.value = getThemeData(
+      colorTheme: _selectedColorTheme,
+      isDark: _isDarkTheme,
+      fontFamily: _selectedFontFamily,
     );
   }
 
