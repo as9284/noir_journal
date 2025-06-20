@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/settings_widgets.dart';
 import '../theme/app_theme.dart';
 import '../lock/app_lock_manager.dart';
 import '../main.dart';
+import '../utils/font_manager.dart';
 
 class SettingsSections {
   static Widget buildAppearanceSection(
@@ -441,25 +441,10 @@ class SettingsSections {
       fontSize: 16,
     );
 
-    try {
-      switch (fontFamily) {
-        case AppFontFamily.inter:
-          return GoogleFonts.inter(textStyle: baseStyle);
-        case AppFontFamily.roboto:
-          return GoogleFonts.roboto(textStyle: baseStyle);
-        case AppFontFamily.opensans:
-          return GoogleFonts.openSans(textStyle: baseStyle);
-        case AppFontFamily.lato:
-          return GoogleFonts.lato(textStyle: baseStyle);
-        case AppFontFamily.sourcesans:
-          return GoogleFonts.sourceSans3(textStyle: baseStyle);
-        case AppFontFamily.nunito:
-          return GoogleFonts.nunito(textStyle: baseStyle);
-      }
-    } catch (e) {
-      // Fallback to base style if Google Fonts fails to load
-      return baseStyle;
-    }
+    return FontManager.getTextStyle(
+      fontFamily: fontFamily,
+      baseStyle: baseStyle,
+    );
   }
 
   // Helper function to get font family text style for list items
@@ -469,25 +454,10 @@ class SettingsSections {
   ) {
     final baseStyle = Theme.of(context).textTheme.titleMedium!;
 
-    try {
-      switch (fontFamily) {
-        case AppFontFamily.inter:
-          return GoogleFonts.inter(textStyle: baseStyle);
-        case AppFontFamily.roboto:
-          return GoogleFonts.roboto(textStyle: baseStyle);
-        case AppFontFamily.opensans:
-          return GoogleFonts.openSans(textStyle: baseStyle);
-        case AppFontFamily.lato:
-          return GoogleFonts.lato(textStyle: baseStyle);
-        case AppFontFamily.sourcesans:
-          return GoogleFonts.sourceSans3(textStyle: baseStyle);
-        case AppFontFamily.nunito:
-          return GoogleFonts.nunito(textStyle: baseStyle);
-      }
-    } catch (e) {
-      // Fallback to base style if Google Fonts fails to load
-      return baseStyle;
-    }
+    return FontManager.getTextStyle(
+      fontFamily: fontFamily,
+      baseStyle: baseStyle,
+    );
   }
 
   // Helper function to get font family text style for subtitles
@@ -499,25 +469,10 @@ class SettingsSections {
       context,
     ).textTheme.bodySmall!.copyWith(fontSize: 12);
 
-    try {
-      switch (fontFamily) {
-        case AppFontFamily.inter:
-          return GoogleFonts.inter(textStyle: baseStyle);
-        case AppFontFamily.roboto:
-          return GoogleFonts.roboto(textStyle: baseStyle);
-        case AppFontFamily.opensans:
-          return GoogleFonts.openSans(textStyle: baseStyle);
-        case AppFontFamily.lato:
-          return GoogleFonts.lato(textStyle: baseStyle);
-        case AppFontFamily.sourcesans:
-          return GoogleFonts.sourceSans3(textStyle: baseStyle);
-        case AppFontFamily.nunito:
-          return GoogleFonts.nunito(textStyle: baseStyle);
-      }
-    } catch (e) {
-      // Fallback to base style if Google Fonts fails to load
-      return baseStyle;
-    }
+    return FontManager.getTextStyle(
+      fontFamily: fontFamily,
+      baseStyle: baseStyle,
+    );
   }
 }
 

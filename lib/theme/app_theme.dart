@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../utils/font_manager.dart';
 
 // Available font families for the journal app
 enum AppFontFamily { inter, roboto, opensans, lato, sourcesans, nunito }
@@ -200,26 +200,13 @@ final Map<AppColorTheme, ColorThemeData> colorThemes = {
 
 // Helper function to get font family string
 String? _getFontFamily(dynamic fontFamily) {
-  if (fontFamily == null) return GoogleFonts.inter().fontFamily;
+  if (fontFamily == null) return FontManager.getFontFamily(AppFontFamily.inter);
 
   if (fontFamily is AppFontFamily) {
-    switch (fontFamily) {
-      case AppFontFamily.inter:
-        return GoogleFonts.inter().fontFamily;
-      case AppFontFamily.roboto:
-        return GoogleFonts.roboto().fontFamily;
-      case AppFontFamily.opensans:
-        return GoogleFonts.openSans().fontFamily;
-      case AppFontFamily.lato:
-        return GoogleFonts.lato().fontFamily;
-      case AppFontFamily.sourcesans:
-        return GoogleFonts.sourceSans3().fontFamily;
-      case AppFontFamily.nunito:
-        return GoogleFonts.nunito().fontFamily;
-    }
+    return FontManager.getFontFamily(fontFamily);
   }
 
-  return GoogleFonts.inter().fontFamily; // Default to Inter
+  return FontManager.getFontFamily(AppFontFamily.inter); // Default to Inter
 }
 
 // Function to get theme data based on color theme and brightness

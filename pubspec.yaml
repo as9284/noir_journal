@@ -19,7 +19,6 @@ dependencies:
   file_picker: ^10.2.0
   crypto: ^3.0.6
   fl_chart: ^1.0.0
-  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -36,6 +35,48 @@ flutter:
     - assets/icon/foreground.png
     - assets/icon/background.png
     - assets/icon/icon.png
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/inter/Inter-VariableFont_opsz,wght.ttf
+        - asset: assets/fonts/inter/Inter-Italic-VariableFont_opsz,wght.ttf
+          style: italic
+
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/roboto/Roboto-VariableFont_wdth,wght.ttf
+        - asset: assets/fonts/roboto/Roboto-Italic-VariableFont_wdth,wght.ttf
+          style: italic
+
+    - family: OpenSans
+      fonts:
+        - asset: assets/fonts/opensans/OpenSans-VariableFont_wdth,wght.ttf
+        - asset: assets/fonts/opensans/OpenSans-Italic-VariableFont_wdth,wght.ttf
+          style: italic
+
+    - family: Lato
+      fonts:
+        - asset: assets/fonts/lato/Lato-Regular.ttf
+        - asset: assets/fonts/lato/Lato-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/lato/Lato-Italic.ttf
+          style: italic
+        - asset: assets/fonts/lato/Lato-BoldItalic.ttf
+          weight: 700
+          style: italic
+
+    - family: SourceSans3
+      fonts:
+        - asset: assets/fonts/sourcesans/SourceSans3-VariableFont_wght.ttf
+        - asset: assets/fonts/sourcesans/SourceSans3-Italic-VariableFont_wght.ttf
+          style: italic
+
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/nunito/Nunito-VariableFont_wght.ttf
+        - asset: assets/fonts/nunito/Nunito-Italic-VariableFont_wght.ttf
+          style: italic
 
 flutter_native_splash:
   color: "#000000"

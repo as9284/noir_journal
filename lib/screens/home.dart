@@ -21,6 +21,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<DiaryEntry> _entries = [];
   final Set<DiaryEntry> _selectedEntries = {};
+  bool _isLoading = true;
   bool get _isSelecting => _selectedEntries.isNotEmpty;
 
   @override
@@ -45,6 +46,7 @@ class _HomePageState extends State<HomePage> {
         // Clear current entries first to ensure proper state reset
         _entries.clear();
         _selectedEntries.clear();
+        _isLoading = true;
       });
       // Then load entries
       _loadEntries();
@@ -52,12 +54,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadEntries() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       final loadedEntries = await SecureStorageService.loadEntries();
 
       if (mounted) {
         setState(() {
           _entries = loadedEntries;
+          _isLoading = false;
         });
       }
     } catch (e) {
@@ -65,6 +72,7 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _entries = [];
+          _isLoading = false;
         });
       }
     }
@@ -215,7 +223,9 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body:
-          _entries.isEmpty
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _entries.isEmpty
               ? _buildEmptyState()
               : SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
@@ -226,7 +236,7 @@ class _HomePageState extends State<HomePage> {
                   selectedEntries: _selectedEntries,
                 ),
               ),
-      floatingActionButton: _buildFloatingActionButton(),
+      floatingActionButton: _isLoading ? null : _buildFloatingActionButton(),
     );
   }
 

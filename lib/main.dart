@@ -7,6 +7,7 @@ import 'package:noir_journal/theme/app_theme.dart';
 
 import 'utils/orientation_lock.dart';
 import 'utils/restart_widget.dart';
+import 'utils/font_manager.dart';
 import 'lock/lock_wrapper.dart';
 import 'utils/app_lock_service.dart';
 import 'utils/security_service.dart';
@@ -22,6 +23,10 @@ ValueNotifier<bool> globalFileOperationInProgress = ValueNotifier(false);
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await lockPortraitMode();
+
+  // Pre-cache fonts for better performance in APK builds
+  await FontManager.precacheFonts();
+
   await initializeAppLockNotifier();
   await initializeScreenshotProtectionNotifier();
 
