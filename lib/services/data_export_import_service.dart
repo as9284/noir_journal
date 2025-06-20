@@ -36,8 +36,7 @@ class DataExportImportService {
         'entries': entries.map((entry) => entry.toJson()).toList(),
       };
       final jsonString = const JsonEncoder.withIndent('  ').convert(exportData);
-
-      final encryptedData = EncryptionService.encryptData(
+      final encryptedData = await EncryptionService.encryptData(
         jsonString,
         exportPassword,
       );
@@ -145,8 +144,7 @@ class DataExportImportService {
           debugPrint(
             '📥 IMPORT DEBUG: Created EncryptedData object, attempting decryption...',
           );
-
-          final decryptedJsonString = EncryptionService.decryptData(
+          final decryptedJsonString = await EncryptionService.decryptData(
             encryptedData,
             password,
           );
@@ -281,8 +279,7 @@ class DataExportImportService {
           final encryptionInfo =
               jsonData['encryption_info'] as Map<String, dynamic>;
           final encryptedData = EncryptedData.fromJson(encryptionInfo);
-
-          final decryptedJsonString = EncryptionService.decryptData(
+          final decryptedJsonString = await EncryptionService.decryptData(
             encryptedData,
             password,
           );

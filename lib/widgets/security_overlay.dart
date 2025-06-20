@@ -23,15 +23,11 @@ class _SecurityOverlayState extends State<SecurityOverlay>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    debugPrint(
-      'SecurityOverlay: initState - appLock enabled: ${widget.enabled}, screenshot protection: ${widget.screenshotProtectionEnabled}',
-    );
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    debugPrint('SecurityOverlay: dispose called');
     super.dispose();
   }
 
@@ -39,8 +35,9 @@ class _SecurityOverlayState extends State<SecurityOverlay>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // App lock overlay logic - only show overlay when app lock is enabled
     if (widget.enabled) {
-      if (state == AppLifecycleState.inactive ||
-          state == AppLifecycleState.paused ||
+      // Only show overlay when app goes to background (paused/hidden), not when inactive
+      // This prevents the flash when notification panel is pulled down
+      if (state == AppLifecycleState.paused ||
           state == AppLifecycleState.hidden) {
         setState(() {
           _showOverlay = true;
@@ -60,9 +57,6 @@ class _SecurityOverlayState extends State<SecurityOverlay>
   @override
   void didUpdateWidget(SecurityOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    debugPrint(
-      'SecurityOverlay: didUpdateWidget - appLock: ${widget.enabled}, screenshot protection: ${widget.screenshotProtectionEnabled}',
-    );
   }
 
   @override
@@ -73,35 +67,7 @@ class _SecurityOverlayState extends State<SecurityOverlay>
         if (_showOverlay)
           Container(
             color: Theme.of(context).scaffoldBackgroundColor,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.shield,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Noir Journal',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Your thoughts, secured',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // Just show a blank screen - no content needed for recents protection
           ),
       ],
     );

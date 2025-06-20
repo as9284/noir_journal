@@ -59,7 +59,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
   }
 
   Future<void> _animateAndPop() async {
-    await Future.delayed(const Duration(milliseconds: 180));
+    // Remove delay for immediate navigation
     if (mounted) Navigator.of(context).pop(true);
   }
 

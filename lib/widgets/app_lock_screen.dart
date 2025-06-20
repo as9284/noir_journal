@@ -45,17 +45,13 @@ class _AppLockScreenState extends State<AppLockScreen> {
   void initState() {
     super.initState();
     _checkLockdownStatus();
-
     if (widget.allowBiometric) {
       _isLoading = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_biometricAttempted && !_isInLockdown) {
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted && !_biometricAttempted && !_isInLockdown) {
-              _biometricAttempted = true;
-              _handleBiometric();
-            }
-          });
+          // Remove delay for immediate biometric authentication
+          _biometricAttempted = true;
+          _handleBiometric();
         } else {
           if (mounted) {
             setState(() {
@@ -243,7 +239,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
   }
 
   Future<void> _animateAndPop(AppLockAction action) async {
-    await Future.delayed(const Duration(milliseconds: 180));
+    // Remove delay for immediate unlock
     if (mounted) Navigator.of(context).pop(action);
   }
 

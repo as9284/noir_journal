@@ -14,7 +14,6 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   bool _locked = false;
   bool _isCheckingLock = false;
   bool _appWasInBackground = false;
-
   @override
   void initState() {
     super.initState();
@@ -23,6 +22,7 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
 
     if (globalAppLockNotifier.value) {
       _locked = true;
+      // Immediately check lock on app start
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _checkLock();
       });
@@ -76,7 +76,10 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
         setState(() {
           _locked = true;
         });
-        _checkLock();
+        // Immediately check lock without delay
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _checkLock();
+        });
       }
     }
   }
@@ -90,6 +93,7 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
       _isCheckingLock = true;
     });
 
+    // Automatically show the PIN entry screen without intermediate screens
     final unlocked = await AppLockManager.requireAuthenticationForApp(context);
 
     if (mounted) {
@@ -103,42 +107,8 @@ class _LockWrapperState extends State<LockWrapper> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     if (_locked) {
-      return GestureDetector(
-        onTap: () {
-          if (!_isCheckingLock) {
-            _checkLock();
-          }
-        },
-        child: Container(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.lock_outline,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'App Locked',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Tap to unlock',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      // Show a blank screen while checking lock - no intermediate screens
+      return Container(color: Theme.of(context).scaffoldBackgroundColor);
     }
     return widget.child;
   }

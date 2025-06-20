@@ -29,8 +29,7 @@ class SecureStorageService {
       final deviceKey = await _getDeviceKey();
       final entriesJson = entries.map((e) => e.toJson()).toList();
       final jsonString = jsonEncode(entriesJson);
-
-      final encryptedData = EncryptionService.encryptData(
+      final encryptedData = await EncryptionService.encryptData(
         jsonString,
         deviceKey,
       );
@@ -60,8 +59,7 @@ class SecureStorageService {
       final containerMap =
           jsonDecode(encryptedContainer) as Map<String, dynamic>;
       final encryptedData = EncryptedData.fromJson(containerMap);
-
-      final decryptedJson = EncryptionService.decryptData(
+      final decryptedJson = await EncryptionService.decryptData(
         encryptedData,
         deviceKey,
       );

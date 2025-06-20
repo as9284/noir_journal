@@ -11,6 +11,7 @@ import 'lock/lock_wrapper.dart';
 import 'utils/app_lock_service.dart';
 import 'utils/security_service.dart';
 import 'widgets/security_overlay.dart';
+import 'services/encryption_service.dart';
 
 ValueNotifier<ThemeData>? globalThemeNotifier;
 ValueNotifier<bool> globalAppLockNotifier = ValueNotifier(false);
@@ -23,6 +24,9 @@ Future<void> main() async {
   await lockPortraitMode();
   await initializeAppLockNotifier();
   await initializeScreenshotProtectionNotifier();
+
+  // Initialize secure encryption
+  await EncryptionService.migrateToSecureEncryption();
 
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('isDarkTheme') ?? false;
