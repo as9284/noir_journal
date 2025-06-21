@@ -391,7 +391,6 @@ class SettingsSections {
   static const String _privacyPolicyUrl =
       'https://as9284.github.io/noir-privacy/';
   static const String _termsOfServiceUrl = 'https://as9284.github.io/noir-tos/';
-
   static Future<void> _openPrivacyPolicy(BuildContext context) async {
     try {
       final Uri url = Uri.parse(_privacyPolicyUrl);
@@ -402,7 +401,7 @@ class SettingsSections {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Privacy policy URL not yet configured. Please check back later.',
+                'Unable to open privacy policy. Please check your internet connection or try again later.',
               ),
             ),
           );
@@ -411,10 +410,8 @@ class SettingsSections {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Privacy policy URL not yet configured. Please check back later.',
-            ),
+          SnackBar(
+            content: Text('Failed to open privacy policy: ${e.toString()}'),
           ),
         );
       }
@@ -431,7 +428,7 @@ class SettingsSections {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Terms of service URL not yet configured. Please check back later.',
+                'Unable to open terms of service. Please check your internet connection or try again later.',
               ),
             ),
           );
@@ -440,10 +437,8 @@ class SettingsSections {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Terms of service URL not yet configured. Please check back later.',
-            ),
+          SnackBar(
+            content: Text('Failed to open terms of service: ${e.toString()}'),
           ),
         );
       }
