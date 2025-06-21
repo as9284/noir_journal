@@ -389,9 +389,8 @@ class SettingsSections {
 
   // Constants for URLs - update these with your actual hosted policy URLs
   static const String _privacyPolicyUrl =
-      'https://your-website.com/privacy-policy';
-  static const String _termsOfServiceUrl =
-      'https://your-website.com/terms-of-service';
+      'https://as9284.github.io/noir-privacy/';
+  static const String _termsOfServiceUrl = 'https://as9284.github.io/noir-tos/';
 
   static Future<void> _openPrivacyPolicy(BuildContext context) async {
     try {

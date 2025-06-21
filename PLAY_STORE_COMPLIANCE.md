@@ -29,8 +29,8 @@
 - [x] Created privacy_policy.md (template)
 - [x] Created terms_of_service.md (template)
 - [x] Added in-app URL redirects to online policies
-- [ ] Host policies on public website
-- [ ] Update URL constants in settings_sections.dart
+- [x] Host policies on public website (GitHub Pages)
+- [x] Update URL constants in settings_sections.dart
 - [ ] Add privacy policy URL to Play Console
 
 ### 2. Store Listing Content
@@ -73,10 +73,10 @@ Perfect for personal reflection, daily thoughts, gratitude journaling, and priva
 
 ## IMMEDIATE TODO:
 
-1. Host privacy policy and terms on a website
-2. Update URL constants in lib/widgets/settings_sections.dart:
-   - Replace 'https://your-website.com/privacy-policy' with actual URL
-   - Replace 'https://your-website.com/terms-of-service' with actual URL
+1. ~~Host privacy policy and terms on a website~~ ✅ COMPLETED
+2. ~~Update URL constants in lib/widgets/settings_sections.dart:~~ ✅ COMPLETED
+   - ~~Replace 'https://your-website.com/privacy-policy' with actual URL~~ ✅ Now: https://as9284.github.io/noir-privacy/
+   - ~~Replace 'https://your-website.com/terms-of-service' with actual URL~~ ✅ Now: https://as9284.github.io/noir-tos/
 3. Update privacy policy URL in Play Console
 4. Add developer contact information
 5. Test URL opening functionality before release
