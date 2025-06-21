@@ -15,7 +15,6 @@ class AppLockScreen extends StatefulWidget {
   final String cancelButtonText;
   final AppLockCallback? onCancel;
   final bool allowBiometric;
-
   const AppLockScreen({
     super.key,
     this.title = 'App Locked',
@@ -295,7 +294,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
                 children:
                     row.map((key) {
                       if (key == '') {
-                        return const SizedBox(width: 60, height: 60);
+                        return const SizedBox(width: 66, height: 66);
                       }
                       if (key == '<') {
                         return _PinBackspaceButton(onTap: _onBackspace);
@@ -308,7 +307,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
                             _biometricAttempted) {
                           return _PinBiometricButton(onTap: _handleBiometric);
                         } else {
-                          return const SizedBox(width: 60, height: 60);
+                          return const SizedBox(width: 66, height: 66);
                         }
                       }
                       return _PinKeyButton(
@@ -456,13 +455,13 @@ class _PinKeyButtonState extends State<_PinKeyButton> {
           onTapUp: _onTapUp,
           onTapCancel: _onTapCancel,
           child: SizedBox(
-            width: 60,
-            height: 60,
+            width: 66,
+            height: 66,
             child: Center(
               child: Text(
                 widget.value,
                 style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 26,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -504,12 +503,12 @@ class _PinBackspaceButtonState extends State<_PinBackspaceButton> {
           onTapUp: _onTapUp,
           onTapCancel: _onTapCancel,
           child: SizedBox(
-            width: 60,
-            height: 60,
+            width: 66,
+            height: 66,
             child: Center(
               child: Icon(
                 Icons.backspace_outlined,
-                size: 24,
+                size: 26,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
@@ -550,12 +549,12 @@ class _PinBiometricButtonState extends State<_PinBiometricButton> {
           onTapUp: _onTapUp,
           onTapCancel: _onTapCancel,
           child: SizedBox(
-            width: 60,
-            height: 60,
+            width: 66,
+            height: 66,
             child: Center(
               child: Icon(
                 Icons.fingerprint,
-                size: 24,
+                size: 26,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),

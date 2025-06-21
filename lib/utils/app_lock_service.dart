@@ -19,7 +19,7 @@ class AppLockService {
     await _storage.write(key: _pinKey, value: pin);
     await setLockEnabled(true);
   }
-
+  
   static Future<String?> getPin() async {
     return await _storage.read(key: _pinKey);
   }
