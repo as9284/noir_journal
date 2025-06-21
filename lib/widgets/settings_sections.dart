@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/settings_widgets.dart';
 import '../theme/app_theme.dart';
@@ -370,15 +371,7 @@ class SettingsSections {
               title: 'Privacy Policy',
               subtitle: 'How we protect your data',
               icon: Icons.privacy_tip,
-              onTap: () {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Privacy policy coming soon!'),
-                    ),
-                  );
-                }
-              },
+              onTap: () => _openPrivacyPolicy(context),
             ),
             SettingsWidgets.buildDivider(theme),
             SettingsWidgets.buildModernTile(
@@ -386,20 +379,76 @@ class SettingsSections {
               title: 'Terms of Service',
               subtitle: 'Terms and conditions',
               icon: Icons.description,
-              onTap: () {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Terms of service coming soon!'),
-                    ),
-                  );
-                }
-              },
+              onTap: () => _openTermsOfService(context),
             ),
           ],
         ),
       ],
     );
+  }
+
+  // Constants for URLs - update these with your actual hosted policy URLs
+  static const String _privacyPolicyUrl =
+      'https://your-website.com/privacy-policy';
+  static const String _termsOfServiceUrl =
+      'https://your-website.com/terms-of-service';
+
+  static Future<void> _openPrivacyPolicy(BuildContext context) async {
+    try {
+      final Uri url = Uri.parse(_privacyPolicyUrl);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Privacy policy URL not yet configured. Please check back later.',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Privacy policy URL not yet configured. Please check back later.',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  static Future<void> _openTermsOfService(BuildContext context) async {
+    try {
+      final Uri url = Uri.parse(_termsOfServiceUrl);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Terms of service URL not yet configured. Please check back later.',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Terms of service URL not yet configured. Please check back later.',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   static void _showDeleteAllDataDialog(
