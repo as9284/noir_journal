@@ -69,9 +69,7 @@ class SettingsSections {
     SettingsController controller,
     ValueNotifier<ThemeData> themeNotifier,
   ) async {
-    // Check app lock before showing dialog
-    final canProceed = await _checkAppLockBeforeAction(context);
-    if (!canProceed || !context.mounted) return;
+    // Color theme changes are cosmetic and should not require app lock authentication
 
     showDialog(
       context: context,
@@ -140,9 +138,7 @@ class SettingsSections {
     SettingsController controller,
     ValueNotifier<ThemeData> themeNotifier,
   ) async {
-    // Check app lock before showing dialog
-    final canProceed = await _checkAppLockBeforeAction(context);
-    if (!canProceed || !context.mounted) return;
+    // Font family changes are cosmetic and should not require app lock authentication
 
     showDialog(
       context: context,

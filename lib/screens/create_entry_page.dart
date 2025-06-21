@@ -20,6 +20,8 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
   int _selectedIconIndex = 0;
   Mood? _selectedMood;
   bool _canSave = false;
+  static const int _iconsPerPage = 30; // Show 30 icons initially (5 rows of 6)
+  int _displayedIconsCount = _iconsPerPage;
 
   @override
   void initState() {
@@ -42,6 +44,15 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
   void _updateCanSave() {
     setState(() {
       _canSave = _titleController.text.trim().isNotEmpty;
+    });
+  }
+
+  void _loadMoreIcons() {
+    setState(() {
+      _displayedIconsCount = (_displayedIconsCount + _iconsPerPage).clamp(
+        0,
+        DiaryIcons.all.length,
+      );
     });
   }
 
@@ -334,6 +345,15 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
                 color: theme.colorScheme.primary,
               ),
             ),
+            const Spacer(),
+            if (_displayedIconsCount < DiaryIcons.all.length ||
+                _displayedIconsCount > _iconsPerPage)
+              Text(
+                '$_displayedIconsCount of ${DiaryIcons.all.length}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 12),
@@ -383,7 +403,7 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                 ),
-                itemCount: DiaryIcons.all.length,
+                itemCount: _displayedIconsCount,
                 itemBuilder: (context, index) {
                   final isSelected = index == _selectedIconIndex;
                   return GestureDetector(
@@ -420,6 +440,25 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
                   );
                 },
               ),
+              if (_displayedIconsCount < DiaryIcons.all.length) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _loadMoreIcons,
+                    icon: const Icon(Icons.expand_more),
+                    label: Text(
+                      'Load More Icons (${DiaryIcons.all.length - _displayedIconsCount} remaining)',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
