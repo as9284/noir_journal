@@ -10,7 +10,7 @@ class AppLockService {
   static const _lockdownUntilKey = 'app_lock_lockdown_until';
 
   static const int maxAttemptsBeforeLockdown = 10;
-  static const int lockdownDurationSeconds = 300;
+  static const int lockdownDurationSeconds = 5;
 
   // Use the shared storage configuration to ensure compatibility
   static const FlutterSecureStorage _storage = SecureStorageConfig.storage;

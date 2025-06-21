@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:io';
 import 'package:local_auth/local_auth.dart';
 import '../utils/app_lock_service.dart';
 
@@ -100,7 +99,6 @@ class _AppLockScreenState extends State<AppLockScreen> {
         final stillInLockdown = await AppLockService.isInLockdown();
         final remainingSeconds =
             await AppLockService.getLockdownRemainingSeconds();
-
         setState(() {
           _isInLockdown = stillInLockdown;
           _lockdownSeconds = remainingSeconds;
@@ -108,18 +106,14 @@ class _AppLockScreenState extends State<AppLockScreen> {
           if (stillInLockdown && remainingSeconds > 0) {
             _error =
                 'Too many failed attempts. Try again in $_lockdownSeconds seconds.';
-          } else if (remainingSeconds <= 0) {
+          } else if (remainingSeconds <= 0 || !stillInLockdown) {
+            // Lockdown has ended, reset everything
             timer.cancel();
             _lockdownTimer = null;
-            if (widget.showCancelButton) {
-              _handleCancel();
-            } else {
-              exit(0);
-            }
-          } else {
+            _isInLockdown = false;
+            _lockdownSeconds = 0;
             _error = null;
-            timer.cancel();
-            _lockdownTimer = null;
+            _pin = '';
           }
         });
       });
@@ -287,7 +281,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
-      ['', '0', '<'],
+      ['biometric', '0', '<'],
     ];
 
     return Column(
@@ -295,16 +289,27 @@ class _AppLockScreenState extends State<AppLockScreen> {
       children:
           keys.map((row) {
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children:
                     row.map((key) {
                       if (key == '') {
-                        return const SizedBox(width: 70, height: 70);
+                        return const SizedBox(width: 60, height: 60);
                       }
                       if (key == '<') {
                         return _PinBackspaceButton(onTap: _onBackspace);
+                      }
+                      if (key == 'biometric') {
+                        // Show biometric button only if conditions are met
+                        if (!_isLoading &&
+                            widget.allowBiometric &&
+                            !_isInLockdown &&
+                            _biometricAttempted) {
+                          return _PinBiometricButton(onTap: _handleBiometric);
+                        } else {
+                          return const SizedBox(width: 60, height: 60);
+                        }
                       }
                       return _PinKeyButton(
                         value: key,
@@ -345,66 +350,64 @@ class _AppLockScreenState extends State<AppLockScreen> {
                   : null,
         ),
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Column(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32.0,
+                vertical: 16,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      MediaQuery.of(context).size.height -
+                      MediaQuery.of(context).padding.top -
+                      MediaQuery.of(context).padding.bottom -
+                      kToolbarHeight -
+                      32, // Account for SafeArea and AppBar
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 32),
-                    Icon(
-                      Icons.lock_outline,
-                      size: 56,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      widget.subtitle,
-                      style: Theme.of(context).textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildPinDots(),
-                    if (_error != null) ...[
-                      const SizedBox(height: 12),
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text(
-                            _error!,
-                            style: const TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
+                    Column(
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+                        Text(
+                          widget.subtitle,
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPinDots(),
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 40),
+                    Center(child: _buildKeypad()),
                   ],
                 ),
-                Center(child: _buildKeypad()),
-                if (!_isLoading &&
-                    widget.allowBiometric &&
-                    !_isInLockdown &&
-                    _biometricAttempted) ...[
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.fingerprint, size: 32),
-                    label: const Text(
-                      'Use Biometrics',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32),
-                      ),
-                    ),
-                    onPressed: _handleBiometric,
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
         ),
@@ -453,13 +456,13 @@ class _PinKeyButtonState extends State<_PinKeyButton> {
           onTapUp: _onTapUp,
           onTapCancel: _onTapCancel,
           child: SizedBox(
-            width: 70,
-            height: 70,
+            width: 60,
+            height: 60,
             child: Center(
               child: Text(
                 widget.value,
                 style: const TextStyle(
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -501,12 +504,58 @@ class _PinBackspaceButtonState extends State<_PinBackspaceButton> {
           onTapUp: _onTapUp,
           onTapCancel: _onTapCancel,
           child: SizedBox(
-            width: 70,
-            height: 70,
+            width: 60,
+            height: 60,
             child: Center(
               child: Icon(
                 Icons.backspace_outlined,
-                size: 28,
+                size: 24,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PinBiometricButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _PinBiometricButton({required this.onTap});
+
+  @override
+  State<_PinBiometricButton> createState() => _PinBiometricButtonState();
+}
+
+class _PinBiometricButtonState extends State<_PinBiometricButton> {
+  double _scale = 1.0;
+
+  void _onTapDown(TapDownDetails _) => setState(() => _scale = 0.95);
+  void _onTapUp(TapUpDetails _) => setState(() => _scale = 1.0);
+  void _onTapCancel() => setState(() => _scale = 1.0);
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _scale,
+      duration: const Duration(milliseconds: 100),
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(32),
+          onTap: widget.onTap,
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapCancel,
+          child: SizedBox(
+            width: 60,
+            height: 60,
+            child: Center(
+              child: Icon(
+                Icons.fingerprint,
+                size: 24,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
