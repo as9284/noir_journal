@@ -222,38 +222,71 @@ class _EntryPageState extends State<EntryPage> {
           ] else ...[
             Container(
               margin: const EdgeInsets.only(right: 16),
-              child: TextButton.icon(
-                onPressed: _hasChanges ? _saveChanges : null,
-                icon: Icon(
-                  Icons.check,
-                  size: 18,
-                  color:
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient:
                       _hasChanges
-                          ? colorScheme.primary
-                          : colorScheme.onSurface.withValues(alpha: 0.4),
+                          ? LinearGradient(
+                            colors: [
+                              colorScheme.primary,
+                              colorScheme.primary.withValues(alpha: 0.8),
+                            ],
+                          )
+                          : null,
+                  boxShadow:
+                      _hasChanges
+                          ? [
+                            BoxShadow(
+                              color: colorScheme.primary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                          : null,
                 ),
-                label: Text(
-                  'Save',
-                  style: TextStyle(
+                child: TextButton.icon(
+                  onPressed: _hasChanges ? _saveChanges : null,
+                  icon: Icon(
+                    Icons.check_rounded,
+                    size: 18,
                     color:
                         _hasChanges
-                            ? colorScheme.primary
+                            ? colorScheme.onPrimary
                             : colorScheme.onSurface.withValues(alpha: 0.4),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
                   ),
-                ),
-                style: TextButton.styleFrom(
-                  backgroundColor:
-                      _hasChanges
-                          ? colorScheme.primary.withValues(alpha: 0.1)
-                          : Colors.transparent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                  label: Text(
+                    'Save',
+                    style: TextStyle(
+                      color:
+                          _hasChanges
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurface.withValues(alpha: 0.4),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                  style: TextButton.styleFrom(
+                    backgroundColor:
+                        _hasChanges
+                            ? Colors.transparent
+                            : colorScheme.surface.withValues(alpha: 0.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      side:
+                          _hasChanges
+                              ? BorderSide.none
+                              : BorderSide(
+                                color: colorScheme.outline.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                    ),
                   ),
                 ),
               ),
@@ -270,22 +303,27 @@ class _EntryPageState extends State<EntryPage> {
                   boxShadow: [
                     BoxShadow(
                       color: colorScheme.shadow.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                      spreadRadius: -2,
                     ),
                   ],
                 ),
-                child: FloatingActionButton(
+                child: FloatingActionButton.extended(
                   onPressed: _cancelEditing,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  foregroundColor: colorScheme.onSurface.withValues(alpha: 0.8),
-                  elevation: 0,
-                  child: const Icon(Icons.close, size: 22),
+                  backgroundColor: colorScheme.errorContainer,
+                  foregroundColor: colorScheme.onErrorContainer,
+                  elevation: 2,
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  label: const Text(
+                    'Cancel',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
               )
               : SpeedDial(
-                icon: Icons.tune,
-                activeIcon: Icons.close,
+                icon: Icons.tune_rounded,
+                activeIcon: Icons.close_rounded,
                 backgroundColor: colorScheme.primaryContainer,
                 foregroundColor: colorScheme.onPrimaryContainer,
                 activeForegroundColor: colorScheme.onPrimaryContainer,
@@ -381,46 +419,206 @@ class _EntryPageState extends State<EntryPage> {
   }
 
   Widget _buildEditingView(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            EntryTitleSection(
-              titleController: _titleController,
-              isEditing: _isEditing,
-            ),
-            const SizedBox(height: 24),
-            EntryDescriptionSection(
-              descriptionController: _descriptionController,
-              isEditing: _isEditing,
-            ),
-            const SizedBox(height: 24),
-            EntryMoodSection(
-              selectedMood: _selectedMood,
-              onMoodChanged: (mood) {
-                setState(() {
-                  _selectedMood = mood;
-                  _onTextChanged();
-                });
-              },
-            ),
-            const SizedBox(height: 24),
-            EntryIconSection(
-              selectedIconIndex: _selectedIconIndex,
-              onIconChanged: (index) {
-                setState(() {
-                  _selectedIconIndex = index;
-                  _onTextChanged();
-                });
-              },
-            ),
-            const SizedBox(height: 80), // Extra space for FAB
-          ],
+      child: Container(
+        decoration: BoxDecoration(
+          gradient:
+              isDark
+                  ? LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colorScheme.surface,
+                      colorScheme.surface.withValues(alpha: 0.98),
+                    ],
+                    stops: const [0.0, 1.0],
+                  )
+                  : null,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with visual emphasis
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors:
+                        isDark
+                            ? [
+                              colorScheme.primaryContainer.withValues(
+                                alpha: 0.3,
+                              ),
+                              colorScheme.primaryContainer.withValues(
+                                alpha: 0.1,
+                              ),
+                            ]
+                            : [
+                              colorScheme.primaryContainer.withValues(
+                                alpha: 0.4,
+                              ),
+                              colorScheme.primaryContainer.withValues(
+                                alpha: 0.2,
+                              ),
+                            ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.shadow.withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                      spreadRadius: -2,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.edit_note_rounded,
+                        color: colorScheme.primary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Edit Entry',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Make changes to your journal entry',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Enhanced form sections with better spacing
+              _buildEnhancedSection(
+                child: EntryTitleSection(
+                  titleController: _titleController,
+                  isEditing: _isEditing,
+                ),
+                theme: theme,
+              ),
+              const SizedBox(height: 24),
+
+              _buildEnhancedSection(
+                child: EntryDescriptionSection(
+                  descriptionController: _descriptionController,
+                  isEditing: _isEditing,
+                ),
+                theme: theme,
+              ),
+              const SizedBox(height: 24),
+
+              _buildEnhancedSection(
+                child: EntryMoodSection(
+                  selectedMood: _selectedMood,
+                  onMoodChanged: (mood) {
+                    setState(() {
+                      _selectedMood = mood;
+                      _onTextChanged();
+                    });
+                  },
+                ),
+                theme: theme,
+              ),
+              const SizedBox(height: 24),
+
+              _buildEnhancedSection(
+                child: EntryIconSection(
+                  selectedIconIndex: _selectedIconIndex,
+                  onIconChanged: (index) {
+                    setState(() {
+                      _selectedIconIndex = index;
+                      _onTextChanged();
+                    });
+                  },
+                ),
+                theme: theme,
+              ),
+
+              const SizedBox(height: 40), // Reduced space for FAB
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildEnhancedSection({
+    required Widget child,
+    required ThemeData theme,
+  }) {
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color:
+            isDark
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+                : colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color:
+              isDark
+                  ? colorScheme.outline.withValues(alpha: 0.1)
+                  : colorScheme.outline.withValues(alpha: 0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: isDark ? 0.15 : 0.08),
+            blurRadius: isDark ? 16 : 12,
+            offset: const Offset(0, 4),
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Padding(padding: const EdgeInsets.all(16), child: child),
     );
   }
 

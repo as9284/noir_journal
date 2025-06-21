@@ -26,17 +26,16 @@ class _MoodSelectorState extends State<MoodSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          child: Text(
+        if (widget.title.isNotEmpty) ...[
+          Text(
             widget.title,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: colorScheme.onSurface,
             ),
           ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 16),
+        ],
         _buildMoodSection('Positive', MoodHelper.getPositiveMoods(), theme),
         const SizedBox(height: 16),
         _buildMoodSection('Neutral', MoodHelper.getNeutralMoods(), theme),
@@ -45,10 +44,16 @@ class _MoodSelectorState extends State<MoodSelector> {
         if (widget.selectedMood != null) ...[
           const SizedBox(height: 16),
           Center(
-            child: TextButton.icon(
+            child: OutlinedButton.icon(
               onPressed: () => widget.onMoodChanged(null),
-              icon: const Icon(Icons.clear, size: 18),
+              icon: const Icon(Icons.clear_rounded, size: 18),
               label: const Text('Clear Selection'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colorScheme.onSurface.withValues(alpha: 0.7),
+                side: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.3),
+                ),
+              ),
             ),
           ),
         ],
@@ -61,20 +66,21 @@ class _MoodSelectorState extends State<MoodSelector> {
     List<MoodData> moods,
     ThemeData theme,
   ) {
+    final colorScheme = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             sectionTitle,
             style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
+              letterSpacing: 0.5,
             ),
           ),
         ),
-        const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -92,7 +98,7 @@ class _MoodSelectorState extends State<MoodSelector> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           if (isSelected) {
             widget.onMoodChanged(null);
@@ -107,14 +113,14 @@ class _MoodSelectorState extends State<MoodSelector> {
             color:
                 isSelected
                     ? moodData.color.withValues(alpha: 0.15)
-                    : colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
+                    : colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color:
                   isSelected
                       ? moodData.color.withValues(alpha: 0.6)
-                      : colorScheme.outline.withValues(alpha: 0.25),
-              width: isSelected ? 2 : 1,
+                      : colorScheme.outline.withValues(alpha: 0.2),
+              width: isSelected ? 1.5 : 1,
             ),
             boxShadow:
                 isSelected
