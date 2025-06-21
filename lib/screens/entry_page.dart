@@ -465,19 +465,18 @@ class _EntryPageState extends State<EntryPage> {
                               ),
                             ]
                             : [
-                              colorScheme.primaryContainer.withValues(
-                                alpha: 0.4,
-                              ),
-                              colorScheme.primaryContainer.withValues(
-                                alpha: 0.2,
-                              ),
+                              colorScheme.primary.withValues(alpha: 0.05),
+                              colorScheme.primary.withValues(alpha: 0.02),
                             ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: colorScheme.primary.withValues(alpha: 0.2),
+                    color:
+                        isDark
+                            ? colorScheme.primary.withValues(alpha: 0.2)
+                            : colorScheme.primary.withValues(alpha: 0.1),
                     width: 1,
                   ),
                   boxShadow: [
@@ -494,7 +493,10 @@ class _EntryPageState extends State<EntryPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.15),
+                        color:
+                            isDark
+                                ? colorScheme.primary.withValues(alpha: 0.15)
+                                : colorScheme.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(

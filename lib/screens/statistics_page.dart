@@ -90,14 +90,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   double get _averageWordsPerEntry =>
       _totalEntries > 0 ? _totalWords / _totalEntries : 0;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Statistics'),
         centerTitle: true,

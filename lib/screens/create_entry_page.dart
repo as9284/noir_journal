@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:noir_journal/models/diary_entry.dart';
-import 'package:noir_journal/constants/diary_icons.dart';
 import 'package:noir_journal/models/mood.dart';
-import 'package:noir_journal/widgets/mood_selector.dart';
+import '../widgets/entry_title_section.dart';
+import '../widgets/entry_description_section.dart';
+import '../widgets/entry_icon_section.dart';
+import '../widgets/entry_mood_section.dart';
 
 class CreateEntryPage extends StatefulWidget {
   const CreateEntryPage({super.key});
@@ -16,12 +18,9 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
   final _descriptionController = TextEditingController();
   final _titleFocusNode = FocusNode();
   final _descriptionFocusNode = FocusNode();
-
   int _selectedIconIndex = 0;
   Mood? _selectedMood;
   bool _canSave = false;
-  static const int _iconsPerPage = 30; // Show 30 icons initially (5 rows of 6)
-  int _displayedIconsCount = _iconsPerPage;
 
   @override
   void initState() {
@@ -47,15 +46,6 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
     });
   }
 
-  void _loadMoreIcons() {
-    setState(() {
-      _displayedIconsCount = (_displayedIconsCount + _iconsPerPage).clamp(
-        0,
-        DiaryIcons.all.length,
-      );
-    });
-  }
-
   void _saveEntry() {
     if (!_canSave) return;
 
@@ -73,6 +63,8 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -83,417 +75,275 @@ class _CreateEntryPageState extends State<CreateEntryPage> {
         backgroundColor: Colors.transparent,
         foregroundColor: theme.colorScheme.onSurface,
         actions: [
-          TextButton(
-            onPressed: _canSave ? _saveEntry : null,
-            child: Text(
-              'Save',
-              style: TextStyle(
-                color:
-                    _canSave ? theme.colorScheme.primary : theme.disabledColor,
-                fontWeight: FontWeight.w600,
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient:
+                    _canSave
+                        ? LinearGradient(
+                          colors: [
+                            colorScheme.primary,
+                            colorScheme.primary.withValues(alpha: 0.8),
+                          ],
+                        )
+                        : null,
+                boxShadow:
+                    _canSave
+                        ? [
+                          BoxShadow(
+                            color: colorScheme.primary.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                        : null,
               ),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderSection(theme),
-            const SizedBox(height: 24),
-            _buildTitleSection(theme),
-            const SizedBox(height: 20),
-            _buildDescriptionSection(theme),
-            const SizedBox(height: 20),
-            _buildMoodSection(theme),
-            const SizedBox(height: 20),
-            _buildIconSection(theme),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderSection(ThemeData theme) {
-    final now = DateTime.now();
-    final timeString =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    final dateString =
-        '${_getWeekday(now.weekday)}, ${_getMonth(now.month)} ${now.day}';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors:
-              theme.brightness == Brightness.dark
-                  ? [Colors.grey[800]!, Colors.grey[850]!]
-                  : [
-                    theme.colorScheme.primary.withAlpha(25),
-                    theme.colorScheme.primary.withAlpha(13),
-                  ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.primary.withAlpha(51),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            timeString,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            dateString,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withAlpha(179),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTitleSection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.title, size: 20, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              'Title',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withAlpha(25),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(
-              color: theme.dividerColor.withAlpha(51),
-              width: 1,
-            ),
-          ),
-          child: TextField(
-            controller: _titleController,
-            focusNode: _titleFocusNode,
-            decoration: InputDecoration(
-              hintText: 'What happened today?',
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(16),
-              hintStyle: TextStyle(
-                color: theme.colorScheme.onSurface.withAlpha(128),
-              ),
-            ),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-            textCapitalization: TextCapitalization.sentences,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDescriptionSection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.description, size: 20, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              'Description',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withAlpha(25),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(
-              color: theme.dividerColor.withAlpha(51),
-              width: 1,
-            ),
-          ),
-          child: TextField(
-            controller: _descriptionController,
-            focusNode: _descriptionFocusNode,
-            maxLines: 5,
-            decoration: InputDecoration(
-              hintText: 'Tell me more about your day...',
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(16),
-              hintStyle: TextStyle(
-                color: theme.colorScheme.onSurface.withAlpha(128),
-              ),
-            ),
-            style: theme.textTheme.bodyMedium,
-            textCapitalization: TextCapitalization.sentences,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMoodSection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.mood, size: 20, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              'Mood',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withValues(alpha: 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(
-              color: theme.dividerColor.withValues(alpha: 0.2),
-              width: 1,
-            ),
-          ),
-          child: MoodSelector(
-            selectedMood: _selectedMood,
-            onMoodChanged: (mood) {
-              setState(() {
-                _selectedMood = mood;
-              });
-            },
-            title: 'How are you feeling today?',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildIconSection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.emoji_emotions,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Choose an Icon',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const Spacer(),
-            if (_displayedIconsCount < DiaryIcons.all.length ||
-                _displayedIconsCount > _iconsPerPage)
-              Text(
-                '$_displayedIconsCount of ${DiaryIcons.all.length}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              child: TextButton.icon(
+                onPressed: _canSave ? _saveEntry : null,
+                icon: Icon(
+                  Icons.check_rounded,
+                  size: 18,
+                  color:
+                      _canSave
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withAlpha(25),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(
-              color: theme.dividerColor.withAlpha(51),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withAlpha(25),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withAlpha(51),
-                    width: 2,
+                label: Text(
+                  'Save',
+                  style: TextStyle(
+                    color:
+                        _canSave
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface.withValues(alpha: 0.4),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
                   ),
                 ),
-                child: Icon(
-                  DiaryIcons.all[_selectedIconIndex],
-                  size: 40,
-                  color: theme.colorScheme.primary,
+                style: TextButton.styleFrom(
+                  backgroundColor:
+                      _canSave
+                          ? Colors.transparent
+                          : colorScheme.surface.withValues(alpha: 0.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side:
+                        _canSave
+                            ? BorderSide.none
+                            : BorderSide(
+                              color: colorScheme.outline.withValues(alpha: 0.3),
+                            ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 6,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient:
+                isDark
+                    ? LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        colorScheme.surface,
+                        colorScheme.surface.withValues(alpha: 0.98),
+                      ],
+                      stops: const [0.0, 1.0],
+                    )
+                    : null,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with visual emphasis
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors:
+                          isDark
+                              ? [
+                                colorScheme.primaryContainer.withValues(
+                                  alpha: 0.3,
+                                ),
+                                colorScheme.primaryContainer.withValues(
+                                  alpha: 0.1,
+                                ),
+                              ]
+                              : [
+                                colorScheme.primary.withValues(alpha: 0.05),
+                                colorScheme.primary.withValues(alpha: 0.02),
+                              ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color:
+                          isDark
+                              ? colorScheme.primary.withValues(alpha: 0.2)
+                              : colorScheme.primary.withValues(alpha: 0.1),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.1),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                        spreadRadius: -2,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color:
+                              isDark
+                                  ? colorScheme.primary.withValues(alpha: 0.15)
+                                  : colorScheme.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          Icons.edit_note_rounded,
+                          color: colorScheme.primary,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Create New Entry',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Capture your thoughts and memories',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
+                                height: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                itemCount: _displayedIconsCount,
-                itemBuilder: (context, index) {
-                  final isSelected = index == _selectedIconIndex;
-                  return GestureDetector(
-                    onTap: () {
+
+                // Enhanced form sections with better spacing
+                _buildEnhancedSection(
+                  child: EntryTitleSection(
+                    titleController: _titleController,
+                    isEditing: true,
+                  ),
+                  theme: theme,
+                ),
+                const SizedBox(height: 24),
+
+                _buildEnhancedSection(
+                  child: EntryDescriptionSection(
+                    descriptionController: _descriptionController,
+                    isEditing: true,
+                  ),
+                  theme: theme,
+                ),
+                const SizedBox(height: 24),
+
+                _buildEnhancedSection(
+                  child: EntryMoodSection(
+                    selectedMood: _selectedMood,
+                    onMoodChanged: (mood) {
+                      setState(() {
+                        _selectedMood = mood;
+                      });
+                    },
+                  ),
+                  theme: theme,
+                ),
+                const SizedBox(height: 24),
+
+                _buildEnhancedSection(
+                  child: EntryIconSection(
+                    selectedIconIndex: _selectedIconIndex,
+                    onIconChanged: (index) {
                       setState(() {
                         _selectedIconIndex = index;
                       });
                     },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      decoration: BoxDecoration(
-                        color:
-                            isSelected
-                                ? theme.colorScheme.primary.withAlpha(51)
-                                : theme.colorScheme.primary.withAlpha(13),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color:
-                              isSelected
-                                  ? theme.colorScheme.primary
-                                  : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(
-                        DiaryIcons.all[index],
-                        size: 24,
-                        color:
-                            isSelected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurface.withAlpha(128),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              if (_displayedIconsCount < DiaryIcons.all.length) ...[
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _loadMoreIcons,
-                    icon: const Icon(Icons.expand_more),
-                    label: Text(
-                      'Load More Icons (${DiaryIcons.all.length - _displayedIconsCount} remaining)',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                      ),
-                    ),
                   ),
+                  theme: theme,
                 ),
+
+                const SizedBox(height: 40),
               ],
-            ],
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 
-  String _getWeekday(int weekday) {
-    const weekdays = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    return weekdays[weekday - 1];
-  }
+  Widget _buildEnhancedSection({
+    required Widget child,
+    required ThemeData theme,
+  }) {
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
-  String _getMonth(int month) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return months[month - 1];
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color:
+            isDark
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+                : colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color:
+              isDark
+                  ? colorScheme.outline.withValues(alpha: 0.1)
+                  : colorScheme.outline.withValues(alpha: 0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: isDark ? 0.15 : 0.08),
+            blurRadius: isDark ? 16 : 12,
+            offset: const Offset(0, 4),
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Padding(padding: const EdgeInsets.all(16), child: child),
+    );
   }
 }
