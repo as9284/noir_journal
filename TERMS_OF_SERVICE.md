@@ -239,7 +239,7 @@ The App may be available in multiple countries and jurisdictions through the Goo
 
 ### 13.2 Governing Law
 
-These Terms are governed by [Insert Jurisdiction] law, without regard to conflict of law principles.
+These Terms are governed by the laws of Lebanon, without regard to conflict of law principles.
 
 ## 14. Dispute Resolution
 
@@ -277,7 +277,7 @@ You may not assign or transfer your rights under these Terms. We may assign our 
 
 If you have questions about these Terms of Service, please contact us at:
 
-**Email:** [Your Contact Email]  
+**Email:** anthonys68892@gmail.com  
 **Subject Line:** Noir Journal Terms of Service Inquiry
 
 ## 17. Special Provisions for Offline Apps
