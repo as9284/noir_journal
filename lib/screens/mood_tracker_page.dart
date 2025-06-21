@@ -500,7 +500,6 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
     final positiveCount = moodCounts.entries
         .where((e) => MoodHelper.getPositiveMoods().any((m) => m.mood == e.key))
         .fold(0, (sum, e) => sum + e.value);
-
     return Column(
       children: [
         Container(
@@ -529,60 +528,67 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
                 size: 24,
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Monthly Average',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Monthly Average',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
                     ),
-                  ),
-                  Text(
-                    _monthlyAverageMoodDescription,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _getColorFromScore(_monthlyAverageMoodScore),
+                    Text(
+                      _monthlyAverageMoodDescription,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: _getColorFromScore(_monthlyAverageMoodScore),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'Total Entries',
-                totalEntries.toString(),
-                Icons.edit_note,
-                Colors.blue,
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Total Entries',
+                  totalEntries.toString(),
+                  Icons.edit_note,
+                  Colors.blue,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Active Days',
-                daysWithEntries.toString(),
-                Icons.calendar_today,
-                Colors.green,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  'Active Days',
+                  daysWithEntries.toString(),
+                  Icons.calendar_today,
+                  Colors.green,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Positive Moods',
-                positiveCount.toString(),
-                Icons.sentiment_very_satisfied,
-                Colors.orange,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  'Positive Moods',
+                  positiveCount.toString(),
+                  Icons.sentiment_very_satisfied,
+                  Colors.orange,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -595,7 +601,7 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
     Color color,
   ) {
     return Container(
-      height: 100,
+      constraints: const BoxConstraints(minHeight: 100, maxHeight: 120),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -606,27 +612,33 @@ class _MoodTrackerPageState extends State<MoodTrackerPage> {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
+          Flexible(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 11,
-              color: Theme.of(context).textTheme.bodySmall?.color,
+          Flexible(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).textTheme.bodySmall?.color,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
