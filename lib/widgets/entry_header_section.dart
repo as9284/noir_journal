@@ -48,73 +48,39 @@ class EntryHeaderSection extends StatelessWidget {
         '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
     final dateString =
         '${_getWeekday(createdAt.weekday)}, ${_getMonth(createdAt.month)} ${createdAt.day}';
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors:
-              theme.brightness == Brightness.dark
-                  ? [
-                    theme.colorScheme.surface,
-                    theme.colorScheme.surface.withValues(alpha: 0.8),
-                  ]
-                  : [
-                    theme.colorScheme.primary.withValues(alpha: 0.1),
-                    theme.colorScheme.primary.withValues(alpha: 0.05),
-                  ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+
+    // Clean, immersive header without borders or containers
+    return Row(
+      children: [
+        // Simple icon without container decorations
+        Icon(
+          DiaryIcons.all[selectedIconIndex],
+          size: 32,
+          color: theme.colorScheme.primary,
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                width: 1,
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                timeString,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-            ),
-            child: Icon(
-              DiaryIcons.all[selectedIconIndex],
-              size: 30,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  timeString,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
+              const SizedBox(height: 4),
+              Text(
+                dateString,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  dateString,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

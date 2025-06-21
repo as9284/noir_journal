@@ -17,18 +17,11 @@ class EntryMetadataSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
+
+    // Clean, centered metadata without borders or containers
+    return Center(
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.access_time,
@@ -36,12 +29,10 @@ class EntryMetadataSection extends StatelessWidget {
             color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _formatDateTime(createdAt),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
+          Text(
+            _formatDateTime(createdAt),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           if (mood != null) ...[

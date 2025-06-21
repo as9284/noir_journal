@@ -8,10 +8,22 @@ class EntryTitleSection extends StatelessWidget {
     required this.titleController,
     required this.isEditing,
   });
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (!isEditing) {
+      // Immersive reading mode - just the title text without decorations
+      return Text(
+        titleController.text,
+        style: theme.textTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: theme.colorScheme.onSurface,
+        ),
+      );
+    }
+
+    // Edit mode - keep the existing structure with title header and borders
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -34,53 +46,26 @@ class EntryTitleSection extends StatelessWidget {
           decoration: BoxDecoration(
             color: theme.cardColor,
             borderRadius: BorderRadius.circular(12),
-            boxShadow:
-                isEditing
-                    ? []
-                    : [
-                      BoxShadow(
-                        color: theme.shadowColor.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
             border: Border.all(
-              color:
-                  isEditing
-                      ? theme.colorScheme.primary.withValues(alpha: 0.3)
-                      : theme.colorScheme.outline.withValues(alpha: 0.2),
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
-          child:
-              isEditing
-                  ? TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter title...',
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.all(16),
-                      hintStyle: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
-                    ),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                  )
-                  : Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      titleController.text,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
+          child: TextField(
+            controller: titleController,
+            decoration: InputDecoration(
+              hintText: 'Enter title...',
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
+              hintStyle: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textCapitalization: TextCapitalization.sentences,
+          ),
         ),
       ],
     );
